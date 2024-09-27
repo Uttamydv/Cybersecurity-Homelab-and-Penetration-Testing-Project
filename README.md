@@ -6,7 +6,15 @@ I designed and implemented a multi-platform cybersecurity homelab to simulate re
 This project is a hands-on cybersecurity homelab designed to simulate real-world working environments. The lab includes a firewall (OPNsense), a vulnerable (Metasploitable 2) machine for ethical hacking, a Windows Server with Active Directory, a Kali Linux machine for penetration testing, and a Windows client machine for domain joining and interaction. The goal of the lab is to practice penetration testing, vulnerability scanning, network defense, and Active Directory management in a secure and controlled virtual environment.
 
 ## Network Topology
-![Network Diagram](images/network-diagram.png)
+![Network Diagram](Network_Topology.png)
+The network diagram above illustrates the architecture of the HomeLab environment.
+### Virtual Network Configuration
+
+Ensure that your virtualization platform (e.g., VMware Workstation or VirtualBox) is configured with the following virtual networks:
+
+- `VLan3`: Used for connecting pfSense.
+- `VLan1`: Used for connecting Kali Linux, windows client machine and the victim machine.
+- `VLan2`: Used for connecting windows Server and mail server.
 
 The homelab consists of the following components:
 - **Firewall/Router**: OPNsense firewall managing network segmentation and traffic filtering. Also act as a router, VPN and IDS/IPS configuration.
@@ -55,7 +63,7 @@ The homelab consists of the following components:
 ## Tools and Technologies
 
 - **Firewall/IDS**: OPNsense, Suricata
-- **Penetration Testing**: Kali Linux with tools like Metasploit, Nmap, Burp Suite, Wireshark,BeeF and lot more.
+- **Penetration Testing**: Kali Linux with tools like Metasploit, Nmap, Burp Suite, Wireshark, BeeF and lot more.
 - **Vulnerability Scanning**: OpenVAS
 - **Active Directory**: Windows Server 2019, BloodHound, PowerView
 - **Operating Systems**: Kali Linux, Windows Server, Windows 10, Ubuntu
@@ -65,9 +73,9 @@ The homelab consists of the following components:
 
 ## Project Structure
 
-- `images/`: Contains screenshots and network diagrams.
+- `images/`: Contains screenshots for various configuation and tasks.
 - `config/`: Configuration files for OPNsense, Suricata, and other tools.
-- `scripts/`: Bash and Python and other scripts for automation and testing.
+- `scripts/`: Bash, Python, Perl and Python and other scripts for automation and testing.
 - `reports/`: Vulnerability reports, penetration testing documentation.
 
 ---
@@ -75,7 +83,7 @@ The homelab consists of the following components:
 ## How to Set Up the Homelab
 
 ### Prerequisites
-- VirtualBox or VMware Workstation for virtualization here I am using VMware workstation.
+- VirtualBox or VMware Workstation for virtualization ,here I am using VMware workstation.
 - ISO files for Windows Server, Kali Linux, Windows 10, and Metasploitable 2
 - OPNsense ISO for firewall setup
 
