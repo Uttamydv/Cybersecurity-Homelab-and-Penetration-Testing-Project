@@ -45,28 +45,36 @@ This section describes the setup of the OPNsense firewall in a VMware environmen
 
 ## Step 2: Basic OPNsense Configuration
 
-### 1. Assign Network Interfaces
-- In the console menu, assign the network interfaces:
-  - **WAN (em0)**: This will connect to the outside world (NAT interface in VirtualBox).
-  - **LAN (em1)**: This will be your internal network interface for connecting to the VMs.
-- Set the LAN IP address (e.g., `192.168.1.1/24`).
+### 1. Assign Network Interfaces and ip addresses to the interfaces
+- In the console menu, assign the network interfaces by 1 option:
+  - **WAN (em0)**: This will connect to the Internet (vmnet8 interface in vmware).
+  - **LAN (em1)**: This will be your internal network interface for connecting to the VMs(vmnet3 interface of vmware).
+   ![](../images/Assigned_interfaces.png)
+- Now set up and configure the ip address of both interface by choosing **option 2**:
+    -Assigned wan ip, default gateway and the dns server by the dhcp of the host vmware.
+    -For LAN(em1) assined a static ip(192.168.1.100) and configure a dhcp server that provide ip address to the vms along with providing the range of ip address assigned by the dhcp server.
+  ![](../images/interface_configuration_1.png)
+  ![](../images/interface_configuration_2.png)
+  ![](../images/interface_configuration_3.png)
+  ![](../images/interface_configuration_result.png)
+   -At last restart the services on the opnsense by reboot.
 
 ### 2. Access the Web Interface
-- From any VM on the **Internal Network** (e.g., Kali Linux), open a browser and go to `http://192.168.1.1`.
+- From any VM on the **Internal Network** (e.g., Kali Linux), open a browser and go to `https://192.168.1.100`.
 - Log in with the following credentials:
   - **Username**: `root`
-  - **Password**: (your chosen root password)
-
+  - **Password**: ********
+    ![](../images/web_gui_opnsense.png)
 ### 3. Initial Setup Wizard
 - Follow the OPNsense setup wizard:
-  - Set the **Hostname** (e.g., `opnsense.local`).
-  - Set DNS and Gateway options (leave as default if using NAT).
-  - Configure the **admin password**.
-
-### 4. Enable DHCP for LAN
-- Go to **Services > DHCPv4 > LAN**.
-- Enable the DHCP server for the LAN interface to automatically assign IP addresses to your internal VMs.
-
+  - Set the **Hostname** (set to `opnsense`).
+  - Set DNS and Gateway options as default.
+    ![](../images/gateways_configuration.png)
+    ![](../images/enamble_dhcp_lan.png)
+### 4. Update the required packages and download the vmware tools
+  -updates the packages and intall the vmware tools as it make running of opnsense smoother in your device.
+  ![](../images/updating_packages_opnsense.png)
+  
 ---
 
 ## Step 3: Configuring Firewall Rules and VLANs
