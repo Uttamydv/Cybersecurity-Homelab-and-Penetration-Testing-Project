@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<ruleset documentation_url="http://docs.opnsense.org/">
+  <location url="http://192.168.1.101/"prefix="customnmap"/>
+  <files>
+	<file description="customnmap rules">customnmap.rules</file>
+	<file description="customnmap" url="inline::rules/customnmap.rules">customnmap.rules</file>
+  </files>
+</ruleset>

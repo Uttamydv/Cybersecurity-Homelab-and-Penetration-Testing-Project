@@ -1,0 +1,1 @@
+alert tcp 192.168.1.101 any -> 192.168.1.100 any (msg:"Possible Nmap Synsteath scan detected"; flow:stateless;flags:S;priority:5; threshold:type threshold, track by_src, count 50, seconds 1; classtype:attempted-recon; sid:1234;) 
