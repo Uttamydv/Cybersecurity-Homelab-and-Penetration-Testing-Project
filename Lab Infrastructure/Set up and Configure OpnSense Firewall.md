@@ -1,7 +1,7 @@
 # OPNsense Firewall Setup
 
 ## Overview
-This section describes the setup of the OPNsense firewall in a VMware environment. OPNsense is used for traffic filtering, network segmentation, act as a router and intrusion detection to secure the internal lab network.
+In this section, I am going to describes the setup of the OPNsense firewall in a VMware environment. OPNsense is used for traffic filtering, network segmentation, act as a router and intrusion detection to secure the internal lab network.
 
 ---
 
@@ -77,7 +77,7 @@ This section describes the setup of the OPNsense firewall in a VMware environmen
   
 ---
 
-## Step 3: Configuring Firewall Rules and VLANs
+## Step 3: Configuring Firewall Rules and set up IDS/IPS
 
 ### 1. Create Basic Firewall Rules for LAN
 - Navigate to **Firewall > Rules > LAN**.
@@ -86,23 +86,35 @@ This section describes the setup of the OPNsense firewall in a VMware environmen
   - **Protocol**: Any
   - **Source**: LAN net
   - **Destination**: Any
+    ![](../images/Adding_new_firewall_rule.png)
 
 This rule allows internal VMs to access the internet via the WAN interface.
 
-### 2. Create VLANs (Optional for Advanced Setup)
-- If you want to segment your internal network (e.g., separate VMs into different network segments):
-  - Go to **Interfaces > Other Types > VLAN**.
-  - Create a VLAN and assign it to the LAN interface.
-  - Configure firewall rules for each VLAN just like you did for the LAN interface.
-
 ### 3. Set Up Intrusion Detection System (IDS) with Suricata
-- Navigate to **Services > Intrusion Detection** and enable **Suricata**.
-- Download and enable rule sets (e.g., **ET Open** rules) to detect and block malicious activity.
-- Start Suricata and monitor network traffic in real-time.
-
+-**Suricata** is a high performance Network IDS, IPS and Network Security Monitoring engine. It is open source and owned by a community-run non-profit foundation, the Open Information Security Foundation (OISF). Suricata is developed by the OISF.As the opnsense IDS and IPS is based on suricata, so lets configure a basic suricata rule that will generate an alert message whenever there is a newwork scanning(using syn request packet) using nmap in the network. 
+ 
+-![for more details about suricata and its rules](https://docs.suricata.io/en/suricata-6.0.0/what-is-suricata.html)
+- Navigate to **Services > Intrusion Detection > Adminstration** and enable it along with IPS and Promiscuous mode.
+ ![](../images/Enable_ids_and_ips_on_opnsense.png)
+- Now i had an cusotmnmap.xml script and cusotmnmap.ruless script(both included in the config). The xml script is used(its work) to download the rule file from my local server.
+- For this first we have to move the xml file to the opnsense /usr/local/onsense/scripts/suricata/metadata/rules directroy using filezilla because till now we have only the cli of opnsense and with this we can't share the file directly. So to transfer file using filezilla we have to setup a sftp connection between the client vm and opnsense.
+- **Enable ssh on opnsense** As default the opnsense disable its ssh services
+  ![](../images/Allowing_ssh_loging_to_opnsense.png)
+- Establise an ssh connection using username and password authentication via filezilla.
+- Now copy paste the file to desired location(i.e /usr/local/opnsense/scripts/suricata/metadata/rules/)
+  ![](../images/Transfering_xml_script_using_filezilla.png)
+- Now serve the customnmap.rule file on your local apache server.
+- Go to opnsense and restart the services.
+- Navigate to **Intrusion Detection > Adminstration > Download**  and download the custom rule from the list and enable it.
+  ![](../images/Download_custom_rule.png) 
+- Now apply rules and start monitoring.
+- Now start the nmap scan from the any client machine on the network.
+  ![](../images/Performing_nmap_scan_on_home_network.png)
+- Now Navigate to **Intrusion Detection > Adminstration > Alerts** to see the output of suricata rules.
+  ![](../images/Alert_generated_by_custom_suricata_rules.png)
 ---
 
 ## Configuration Files
-- [Firewall Rules](config/firewall-rules.xml)
-- [Suricata Config](config/suricata-rules.conf)
+-![cusotmnmap.xml script](../config/customnmap.xml)
+-![cusotmnmap.rules](../config/customnmap.rules) 
 
