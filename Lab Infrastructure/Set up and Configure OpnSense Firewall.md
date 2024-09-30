@@ -116,6 +116,6 @@ This rule allows internal VMs to access the internet via the WAN interface.
 ---
 
 ## Configuration Files
--![cusotmnmap.xml script](../config/customnmap.xml)
--![cusotmnmap.rules](../config/customnmap.rules) 
+-![cusotmnmap.xml script](../Config/customnmap.xml)
+-![cusotmnmap.rules](../Config/customnmap.rules) 
 
