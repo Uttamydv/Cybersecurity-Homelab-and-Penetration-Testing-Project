@@ -106,7 +106,8 @@ This rule allows internal VMs to access the internet via the WAN interface.
 - Now serve the customnmap.rule file on your local apache server.
 - Go to opnsense and restart the services.
 - Navigate to **Intrusion Detection > Adminstration > Download**  and download the custom rule from the list and enable it.
-  ![](../images/Download_custom_rule.png) 
+  ![](../images/Downloading_custom_rule.png)
+  ![](../images/Enable_custom_rule.png)
 - Now apply rules and start monitoring.
 - Now start the nmap scan from the any client machine on the network.
   ![](../images/Performing_nmap_scan_on_home_network.png)
