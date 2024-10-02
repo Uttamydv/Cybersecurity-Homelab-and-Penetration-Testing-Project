@@ -1,9 +1,7 @@
-![image](https://github.com/user-attachments/assets/cd510f4c-fce5-4fd6-8a9c-ce3d0fbe2f7f)# OPNsense Firewall Setup
-
 ## Overview
--In this section, I am going to describes the setup of the OPNsense firewall in a VMware environment. OPNsense is used for traffic filtering, network segmentation, act as a router and intrusion detection and prevention to secure the internal lab network. 
+- In this section, I am going to describes the setup of the OPNsense firewall in a VMware environment. OPNsense is used for traffic filtering, network segmentation, act as a router and intrusion detection and prevention to secure the internal lab network. 
 
--Also using tools like suricata(An IDS and IPS), splunk(A SIEM) and os-squid(A web proxy).
+- Also using tools like suricata(An IDS and IPS), splunk(A SIEM) and os-squid(A web proxy).
 
 ---
 
@@ -159,8 +157,9 @@ This rule allows internal VMs to access the internet via the WAN interface.
 -For this the opnsense provide us a squid proxy which is tranparent i.e client browser don't need to configure to the proxy.
 -For this we need to install **OS-Squid** plugin on our opnsense from the **Firmware> plugins** of opnsense.
 -OPNsense offers a powerful proxy(Squid) that can be used in combination with category based web filtering and any ICAP capable anti virus/malware engine. The proxy can be configured to run in transparent mode, this mean the clients browser does not have to be configured for the web proxy, but all traffic is diverted to the proxy automatically by utilizing Network Address Translation.
-  ![](../images/squid_plugin.png)
--**Step 1** - Basic Proxy Setup
+![](../images/squid_plugin.png)
+  
+**Step 1** - Basic Proxy Setup
 -After intallation of the pluggin, navigate to **Services >squid web proxy >admistration** and enable the proxy.
 
 **Step 2** - Transparent HTTP
@@ -177,7 +176,7 @@ This rule allows internal VMs to access the internet via the WAN interface.
 Before we can setup transparent HTTPS proxy we need to create a Certificate Authority that will authorise that request is from our internal network.
 - For this Go to **System ‣ Trust ‣ Authorities** and create a self signed certificate.
 - Now download that certificate and Since the CA is not trusted by your browser, you will get a message about this for each page you visit.To solve this you can import the Key into your OS and import it your browser, using your browser setting tabs.
-- ![](../images/custom_CA_certificate.png)
+![](../images/custom_CA_certificate.png)
 
 **Step 5** - Transparent SSL
 -Go to **Services > Web Proxy > Administration** Then select in General Forward setting and select Transpare HTTP proxy with ssl mode and set your custom CA(certificate authority) as CA authorisation and then apply changes.
