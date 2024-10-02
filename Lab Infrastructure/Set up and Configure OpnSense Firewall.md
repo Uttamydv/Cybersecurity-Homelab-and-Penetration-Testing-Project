@@ -194,5 +194,6 @@ And we can't access these website through our network.
 ![](../images/acess_control_list.png)
 
 -To Download the access control list, visit ![ACL](https://dsi.ut-capitole.fr/blacklists/index_en.php).
+
 **Now apply all the changes and restart the web proxy**
 
