@@ -15,7 +15,7 @@ In this, I am going to setup the following client machines and servers in my Hom
 ### 1.1 Install Windows Server on VMware
 
 1. **Download Windows Server ISO** from Microsoft's official site.
-   ![](../images/ISO_images_and_OVA_files.png)
+   ![](../images/ISO_images_and_OVA files.png)
 2. **Create a new VM** in VMware with at least:
    - **2GB RAM**, **2 CPU cores**, **40GB disk** (Mininmum requirement for the windows 2019 server vm).
    - Attach the Windows Server ISO and complete the installation as like of opnsense.
@@ -37,7 +37,7 @@ In this, I am going to setup the following client machines and servers in my Hom
 2. **Install Active Directory Domain Services (AD DS)** via **Server Manager > Add role and features**.
 ![](../images/server_manager.png)
 ![](../images/ADDS_installation_1.png)
-![](../images/ADDS_inatallation_2.png)
+![](../images/ADDS_installation_2.png)
 3. **Promote the server to a domain controller**:
    - Set up a new root domain (In my case I use, `uttam.local`).
      ![](../images/promote_to_DC.png)
@@ -65,7 +65,7 @@ The Windows 10 client will be joined to the domain controlled by the Windows Ser
 1. **Download Windows 10 ISO file** from Microsoft's website.
 2. **Create a new VM** in VMware with:
    - **1.5GB RAM**, **1 CPU core**, **40GB disk**.
-![](../images/windows_configuration.png)
+![](../images/windows_configuation.png)
 3. Complete the installation with a local account similar to earlier ISO installation and start the machine.
 ![](../images/windows_10.png)
 4. **Check network coniguration**
@@ -100,7 +100,7 @@ The Windows 10 client will be joined to the domain controlled by the Windows Ser
 1. Set **Kali Linux** to use the same **internal network (vmnet 2)** as the other VMs in the homelab (LAN network of OPNsense).
  ![](../images/kali_linux_configuration.png)
 2. The default gateway is set to the **LAN ip of opnsense**.(In my case it is 192.168.1.100)
- ![](../images/kali_linux_network_configuration.png)
+ ![](../images/kali_network_configuration.png)
 ### Verify Connectivity:
 
 Check if the **Kali Linux VM** can communicate with the other VMs in your network:
