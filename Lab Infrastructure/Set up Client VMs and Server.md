@@ -74,11 +74,14 @@ The Windows 10 client will be joined to the domain controlled by the Windows Ser
 ### 2.2 Join the Windows 10 Client to the Domain
 
 1. Set the **DNS server** of the Windows 10 VM to the IP of the Windows Server (In my case, `192.168.11.240`).
-2. Go to **System > About** and click **Join a domain**.
-3. Enter the **domain name** (In my case, `uttam.local`), and provide **Administrator credentials** to join the domain.
-4. Reboot the VM and log in with **domain credentials**.
-
-
+![](../images/set_dns_of_DC.png)
+2. Go to **System > About** and click **Advance Settings**.
+3. Enter the **domain name** (In my case, `uttam.local`), and provide **Administrator credentials or any user crudential that is present on the DC** to join the domain.
+![](../images/join_the_domain.png)
+![](../images/join_the_domain_2.png)
+5. Restart the VM and log in with **domain credentials**.
+![](../images/log_in_with_DC_authentication.png)
+![](../images/logged_in_via_DC.png)
 ---
 
 ## Step 3: Set Up Kali Linux for Penetration Testing
