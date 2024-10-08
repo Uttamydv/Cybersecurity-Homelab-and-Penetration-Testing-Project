@@ -2,7 +2,7 @@
 
 ## Overview
 
-In this I am going to setup the following client machines and servers in my Homelab:
+In this, I am going to setup the following client machines and servers in my Homelab:
 - **Windows Server 2019**: Configured as a domain controller with **Active Directory**.
 - **Windows 10 Client**: Joined to the domain to simulate a corporate environment.
 - **Kali Linux**: Used for penetration testing and vulnerability scanning i.e to perform different attacks on windows machine and metasploitable machine.
@@ -34,7 +34,7 @@ In this I am going to setup the following client machines and servers in my Home
 1. **Assign a Static IP along with subnet mask,default gateway and dns server** (In my case I use, `ip =192.168.11.240 `, subnet mask= 255.255.255.0, gateway= 192.168.11.2 and dns server =192.168.11.240).
    ![](../images/windows_server_ip_configuration.png)
    ![](../images/windows_server_dns_configuration.png)
-2. **Install Active Directory Domain Services (AD DS)** via **Server Manager < Add role and features**.
+2. **Install Active Directory Domain Services (AD DS)** via **Server Manager > Add role and features**.
 ![](../images/server_manager.png)
 ![](../images/ADDS_installation_1.png)
 ![](../images/ADDS_inatallation_2.png)
@@ -65,7 +65,11 @@ The Windows 10 client will be joined to the domain controlled by the Windows Ser
 1. **Download Windows 10 ISO file** from Microsoft's website.
 2. **Create a new VM** in VMware with:
    - **1.5GB RAM**, **1 CPU core**, **40GB disk**.
+![](../images/windows_configuration.png)
 3. Complete the installation with a local account similar to earlier ISO installation and start the machine.
+![](../images/windows_10.png)
+4. **Check network coniguration**
+![](../images/windows_network_configuration.png)
 
 ### 2.2 Join the Windows 10 Client to the Domain
 
@@ -73,18 +77,6 @@ The Windows 10 client will be joined to the domain controlled by the Windows Ser
 2. Go to **System > About** and click **Join a domain**.
 3. Enter the **domain name** (In my case, `uttam.local`), and provide **Administrator credentials** to join the domain.
 4. Reboot the VM and log in with **domain credentials**.
-## 3.2 Configure Windows 10 Networking
-
-### Configure the Network:
-
-
-
-### Verify Connectivity:
-
-Check if the **Windows 10 VM** can communicate with the other VMs in your network:
-ping google.com     # Can access the internet
-ping 192.168.1.100  # Ping Windows 10 Client
-ping 192.168.1.50   # Ping Metasploitable 2
 
 
 ---
@@ -97,25 +89,29 @@ ping 192.168.1.50   # Ping Metasploitable 2
 - You can install kali from the **ISO** or through a pre-configured **OVA** file(Similar installation steps).
 - Both **ISO** and **OVA** files are available at kali linux official website.
 - Once installed, update the system by running following command in terminal:
-   sudo apt-get update && sudo apt upgrade 
+  ```bash
+   sudo apt-get update && sudo apt-get upgrade
+  ```
+  ![](../images/kali_linux.png)
 ## 3.2 Configure Kali Networking
 
 ### Configure the Network:
 
-1. Set **Windows 10** to use the same **internal network (vmnet 3)** as the other VMs in the homelab (LAN of OPNsense).
-![](../images/kali_network_adapter.png)
-2. The default gateway is set to the **LAN ip of opnsense**.
-
+1. Set **Kali Linux** to use the same **internal network (vmnet 2)** as the other VMs in the homelab (LAN network of OPNsense).
+ ![](../images/kali_linux_configuration.png)
+2. The default gateway is set to the **LAN ip of opnsense**.(In my case it is 192.168.1.100)
+ ![](../images/kali_linux_network_configuration.png)
 ### Verify Connectivity:
 
 Check if the **Kali Linux VM** can communicate with the other VMs in your network:
+```bash
 ping 192.168.11.240   # Ping Windows Server
-ping 192.168.1.104    # Ping Windows 10 Client
-ping 192.168.1.105    # Ping Metasploitable 2
-ping google.com       # Ping to internet
-
-
----
+ping 192.168.1.102    # Ping Windows 10 Client
+ping 192.168.1.103    # Ping Metasploitable 2
+ping google.com       # Ping to internet 
+```
+ ![](../images/verifying_connectivity_of_kali_linux.png)
+ 
 ---
 
 ## Step 4: Set Up Metasploitable 2 (Vulnerable Target Machine)
@@ -124,26 +120,25 @@ ping google.com       # Ping to internet
 
 ### 4.1 Install Metasploitable 2
 
-1. **Download Metasploitable 2** from: [https://sourceforge.net/projects/metasploitable/](https://sourceforge.net/projects/metasploitable/).
+1. **Download Metasploitable 2** from official website: [https://sourceforge.net/projects/metasploitable/](https://sourceforge.net/projects/metasploitable/).
 
 2. **Import the VM into VMware**:
    - Open VMware and select **Import Appliance**.
    - Import the **Metasploitable 2 OVA** file.
 
-3. **Start the VM** and log in:
-   - **Username**: `msfadmin`
-   - **Password**: `msfadmin`
-
+3. **Start the VM** and log in with default crudential **user-> msfadmin and password-> msfadmin**.
+ ![](../images/metasploitable.png)
 ---
 
 ### 4.2 Configure Networking for Metasploitable 2
 
-1. Set the **network adapter** of Metasploitable 2 to the same internal network (LAN) as the other VMs.
-
-   - In **VirtualBox** or **VMware**, configure the network adapter to match the settings of the other machines connected to your internal network.
-
+1. Set the **network adapter** of Metasploitable 2 to the same internal network (vmnet 2) as the other VMs.
+ ![](../images/metasploitable_configuration.png)
 ### Verify Connectivity:
 
-Ensure that **Metasploitable 2** can be pinged from **Kali Linux** and other VMs:
-```bash
-ping 192.168.1.50   # Ping Metasploitable 2
+Ensure that **Metasploitable 2** can be pinged from **Kali Linux** and other VMs.
+ ![](../images/metasploitable_network_configuration.png)
+
+---
+**Now my Homelab is completely setup and lets dive into the various attack senerio**
+ ![](../images/homelab_setup.png)
