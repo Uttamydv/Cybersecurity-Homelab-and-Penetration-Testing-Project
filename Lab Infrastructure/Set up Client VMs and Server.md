@@ -1,14 +1,12 @@
-# Cybersecurity Homelab: Windows Server, Windows 10 Client, Kali Linux, and Metasploitable 2 Setup
+# Cybersecurity Homelab Client Machines: Windows Server, Windows 10, Kali Linux, and Metasploitable 2 Setup
 
 ## Overview
 
-This project outlines the setup of a complete cybersecurity homelab featuring the following components:
+In this I am going to setup the following client machines and servers in my Homelab:
 - **Windows Server 2019**: Configured as a domain controller with **Active Directory**.
 - **Windows 10 Client**: Joined to the domain to simulate a corporate environment.
-- **Kali Linux**: Used for penetration testing and vulnerability scanning.
+- **Kali Linux**: Used for penetration testing and vulnerability scanning i.e to perform different attacks on windows machine and metasploitable machine.
 - **Metasploitable 2**: A vulnerable target machine used for performing attacks and exploiting its vulnerabilities.
-
-The homelab allows you to test and practice key cybersecurity concepts such as **network security**, **Active Directory management**, **vulnerability scanning and Exploitation**, and **penetration testing**.
 
 ---
 
@@ -17,20 +15,40 @@ The homelab allows you to test and practice key cybersecurity concepts such as *
 ### 1.1 Install Windows Server on VMware
 
 1. **Download Windows Server ISO** from Microsoft's official site.
+   ![](../images/ISO_images_and_OVA_files.png)
 2. **Create a new VM** in VMware with at least:
-   - **2GB RAM**, **2 CPU cores**, **40GB disk**.
+   - **2GB RAM**, **2 CPU cores**, **40GB disk** (Mininmum requirement for the windows 2019 server vm).
    - Attach the Windows Server ISO and complete the installation as like of opnsense.
-
+   - **Note**: Use windows server standard eddition as it require less resources and choose datacentre edition if your have large enterprise requirement.
+![](../images/windows_server_installation_1.png)
+![](../images/windows_server_installation_2.png)
+![](../images/windows_server_installation_3.png)
+![](../images/windows_server_installation_4.png)
 3. Set an **Administrator password** and log into the Windows Server.
+![](../images/windows_server_installation_5.png)
+4. Remove the ISO from the booting device and set to directly boot from Hard disk.
+![](../images/windows_server_installation_6.png)
 
 ### 1.2 Configure Active Directory
 
-1. **Assign a Static IP** (e.g., `192.168.1.10`).
-2. **Install Active Directory Domain Services (AD DS)** via Server Manager.
+1. **Assign a Static IP along with subnet mask,default gateway and dns server** (In my case I use, `ip =192.168.11.240 `, subnet mask= 255.255.255.0, gateway= 192.168.11.2 and dns server =192.168.11.240).
+   ![](../images/windows_server_ip_configuration.png)
+   ![](../images/windows_server_dns_configuration.png)
+2. **Install Active Directory Domain Services (AD DS)** via **Server Manager < Add role and features**.
+![](../images/server_manager.png)
+![](../images/ADDS_installation_1.png)
+![](../images/ADDS_inatallation_2.png)
 3. **Promote the server to a domain controller**:
-   - Set up a new domain (e.g., `lab.local`).
+   - Set up a new root domain (In my case I use, `uttam.local`).
+     ![](../images/promote_to_DC.png)
+     ![](../images/promote_to_DC_1.png)
+     ![](../images/promote_to_DC_2.png)
+     ![](../images/promote_to_DC_3.png)
+     ![](../images/promote_to_DC_4.png)
+     ![](../images/promote_to_DC_5.png)
 
-4. After restarting, open **Active Directory Users and Computers** to verify that AD is running.
+4. Now Restart the server and open **Server Manager> Tools> Active Directory Users and Computers** to verify that AD is running.
+   ![](../images/ADDS_services.png)
 
 ---
 
@@ -38,47 +56,63 @@ The homelab allows you to test and practice key cybersecurity concepts such as *
 
 The Windows 10 client will be joined to the domain controlled by the Windows Server.
 
-### 2.1 Install Windows 10 on VM
+### 2.1 Install Windows 10 on VMWare
 
-1. **Download Windows 10 OVA file** from Microsoft's site.
+1. **Download Windows 10 OVA file** from Microsoft's website.
+![](../images/ISO_images_and_OVA_files.png)
 2. From **OVA package** you had a Pre-configured VM which can be imported directly and ready to use without running the intaller.
-**Alternative**
-1. **Download Windows 10 ISO file** from Microsoft's site.
+**Alternative : from ISO image**
+1. **Download Windows 10 ISO file** from Microsoft's website.
 2. **Create a new VM** in VMware with:
    - **1.5GB RAM**, **1 CPU core**, **40GB disk**.
-3. Complete the installation with a local account similar to earlier iso installation and start the machine.
+3. Complete the installation with a local account similar to earlier ISO installation and start the machine.
 
 ### 2.2 Join the Windows 10 Client to the Domain
 
-1. Set the **DNS server** of the Windows 10 VM to the IP of the Windows Server (e.g., `192.168.1.10`).
+1. Set the **DNS server** of the Windows 10 VM to the IP of the Windows Server (In my case, `192.168.11.240`).
 2. Go to **System > About** and click **Join a domain**.
-3. Enter the **domain name** (e.g., `lab.local`), and provide **Administrator credentials** to join the domain.
+3. Enter the **domain name** (In my case, `uttam.local`), and provide **Administrator credentials** to join the domain.
 4. Reboot the VM and log in with **domain credentials**.
+## 3.2 Configure Windows 10 Networking
+
+### Configure the Network:
+
+
+
+### Verify Connectivity:
+
+Check if the **Windows 10 VM** can communicate with the other VMs in your network:
+ping google.com     # Can access the internet
+ping 192.168.1.100  # Ping Windows 10 Client
+ping 192.168.1.50   # Ping Metasploitable 2
+
 
 ---
 
 ## Step 3: Set Up Kali Linux for Penetration Testing
 
-**Kali Linux** will be used for penetration testing(attacking machine) in the homelab. It will be used to test attacks against both the **Windows Server** and **Metasploitable 2**.
+**Kali Linux** will be used for penetration testing(attacking machine) in my homelab. It will be used to test attacks against both the **Windows Server, windows 10 client** and **Metasploitable 2**.
 
 ### 3.1 Install Kali Linux on VM
 - You can install kali from the **ISO** or through a pre-configured **OVA** file(Similar installation steps).
-- Once installed, update the system:
-   ```bash
-   sudo apt update && sudo apt upgrade -y
+- Both **ISO** and **OVA** files are available at kali linux official website.
+- Once installed, update the system by running following command in terminal:
+   sudo apt-get update && sudo apt upgrade 
 ## 3.2 Configure Kali Networking
 
 ### Configure the Network:
 
-1. Set **Kali Linux** to use the same **internal network (LAN)** as the other VMs in the homelab (e.g., on OPNsense).
-2. Ensure the network adapter is connected to the same network as the **Windows Server** and **Windows Client** VMs.
+1. Set **Windows 10** to use the same **internal network (vmnet 3)** as the other VMs in the homelab (LAN of OPNsense).
+![](../images/kali_network_adapter.png)
+2. The default gateway is set to the **LAN ip of opnsense**.
 
 ### Verify Connectivity:
 
 Check if the **Kali Linux VM** can communicate with the other VMs in your network:
-ping 192.168.1.10   # Ping Windows Server
-ping 192.168.1.100  # Ping Windows 10 Client
-ping 192.168.1.50   # Ping Metasploitable 2
+ping 192.168.11.240   # Ping Windows Server
+ping 192.168.1.104    # Ping Windows 10 Client
+ping 192.168.1.105    # Ping Metasploitable 2
+ping google.com       # Ping to internet
 
 
 ---
