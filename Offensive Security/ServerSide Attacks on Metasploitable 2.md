@@ -61,7 +61,7 @@ It was categorised in two categories:
 nmap -sn 192.168.1.100/24
 ```
 Output:
-! [](../images/nmap_hostscan_on_entire_network.png)
+![](../images/nmap_hostscan_on_entire_network.png)
 As from the above result we get that our network has 
 192.168.1.100 -> opnsense firewall address
 
@@ -84,7 +84,7 @@ sV -> For service detection along with its version.
 
 v  -> For verbose i.e detail about each step.
 **Output**:
-! [](../images/nmap_port_scan_on_target.png)
+![](../images/nmap_port_scan_on_target.png)
 
 ---
 # Step 2 Identifying Vulnerabilites and Exploit them
@@ -105,8 +105,8 @@ nmap -p 21 --script ftp-anon.nse 192.168.1.103
 nmap -p 21 --script ftp-vsftpd-backdoor.nse 192.168.1.103
 ```
 **Output**
-! [](../images/checking_for_anonymous_login_in_vsftpd.png)
-! [](../images/checking_for_vsftpd_backdoor_via_nse_scripts.png)
+![](../images/checking_for_anonymous_login_in_vsftpd.png)
+![](../images/checking_for_vsftpd_backdoor_via_nse_scripts.png)
 From the output we can conclude that there are 2 main vulnerability present in the **vsftpd-2.3.4**:
 
 **1. Anonymous login allowed without password.**
@@ -123,7 +123,7 @@ From the output we can conclude that there are 2 main vulnerability present in t
   **Step I**: Open Filezila and put the **host= Metasploitable ip i.e 192.168.1.103** & **username= anonymous** & **password= (left blank)**
   
   **Step II**: Start a quick scan and you get connected to the vsftpd server.
- ! [](../images/anonymous_login_via_filezila.png) 
+ ![](../images/anonymous_login_via_filezila.png) 
   
   **Using linux ftp-client**:Enter the terminal and run ftp-client by:
   ```
@@ -132,7 +132,7 @@ username=anonymous
 password=
 ```
 **Output**
-! [](../images/anonymous_login_via_ftp_client.png)
+![](../images/anonymous_login_via_ftp_client.png)
 
 **Now we have successfully gained access to the ftp server of our target which has misconfigured ftp service. But with the ftp server of metasploit we can't perform that much shell operation as its limited scope of transfering files to the server only**.
 
@@ -155,9 +155,9 @@ msf exploit(unix/ftp/vsftpd_234_backdoor) > set RPORT 21
 #Run the exploit
 msf exploit(unix/ftp/vsftpd_234_backdoor) > exploit
 ```
-! [](../images/exploiting_vsftpd_backdoor_using_metasploit_1.png)
-! [](../images/exploiting_vsftpd_backdoor_using_metasploit_2.png)
-! [](../images/exploiting_vsftpd_backdoor_using_metasploit_3.png)
+![](../images/exploiting_vsftpd_backdoor_using_metasploit_1.png)
+![](../images/exploiting_vsftpd_backdoor_using_metasploit_2.png)
+![](../images/exploiting_vsftpd_backdoor_using_metasploit_3.png)
 
 **After running the exploit, a shell session is estabilise with the target machine and you execute any linux command on the target machine.**
 #To get the above script -> ! [here]()
@@ -165,7 +165,7 @@ msf exploit(unix/ftp/vsftpd_234_backdoor) > exploit
 
 ---
 ## Exploiting Service on Port 22: ssh service(secure shell) Openssh-4.7p1
-! [](../images/services_on_port_22.png)
+![](../images/services_on_port_22.png)
 ### Identifying Vulnerabilites or Weakness
  ```
 cd /usr/share/nmap/scripts
@@ -176,8 +176,8 @@ nmap -p 22 --scripts ssh-auth-methods.nse
 nmap -p 22 --scripts ssh2-enum-algo.nse
 ```
 **Output**
-! [](../images/scanning_with_nse_scripts_against_ssh.png)
-! [](../images/scanning_with_nse_scripts_against_ssh_2.png)
+![](../images/scanning_with_nse_scripts_against_ssh.png)
+![](../images/scanning_with_nse_scripts_against_ssh_2.png)
 From the output we get that the target machine uses both password and private key based authentication. Also we get info about the algorithm used by the ssh-server like rsa,dss which are quite weak and outdated encryption algorithms.But We can conclude a direct vulnerability from here. Now search for vulnerability in this ssh version(Openssh-4.7p1) on internet, search openssh-4.7 exploit, here we found that it has a **user code execution vulnerability** which allow us to execute command on the remote server after getting an ssh connection with the target server and its corresponding exploit is present in the metasploit exploit db module.
 
 ### Exploitation:
@@ -207,11 +207,11 @@ msf auxiliary(scanner/ssh/ssh_login) > exploit
 ```
 Now this module will brute force the ssh login with the wordlist and if there is a match we get the username and password for that ssh server.We get them easily, if it has default crudential or weak password. If this doesn't get the result parameter create your custom wordlist as per you target info and use them.
 **Output**
-! [](../images/exploiting_ssh_using_bruteforce_1.png)
-! [](../images/exploiting_ssh_using_bruteforce_2.png)
-! [](../images/exploiting_ssh_using_bruteforce_3.png)
-! [](../images/ssh_bruteforce_wordlist.png)
-! [](../images/exploiting_ssh_using_bruteforce_4.png)
+![](../images/exploiting_ssh_using_bruteforce_1.png)
+![](../images/exploiting_ssh_using_bruteforce_2.png)
+![](../images/exploiting_ssh_using_bruteforce_3.png)
+![](../images/ssh_bruteforce_wordlist.png)
+![](../images/exploiting_ssh_using_bruteforce_4.png)
 In my case I am using metasploitable with default login crudential,that why get the result as **username= msfadmin** and **password= msfadmin**.
 
 From here, one way is we have ssh-crudentials and using them we can connect to the target via any ssh-client but using this we had to manually perform command for each task injecting payload and other post exploitation stuff. So automate the command execution task and integrate the ssh connection with metasploit framework we are using the **sshexec** module of metasploit framework for connecting via ssh.It makes running **custom payloads**, **privilege escalation**, and **post-exploitation** tasks easier and more structured.
@@ -236,11 +236,11 @@ msf exploit(multi/ssh/sshexec) > show options
 msf exploit(multi/ssh/sshexec) > exploit
 ```
 **Output**
-! [](../images/automation_and_for_post_exploitation_1.png)
-! [](../images/automation_and_for_post_exploitation_2.png)
-! [](../images/automation_and_for_post_exploitation_3.png)
-! [](../images/automation_and_for_post_exploitation_4.png)
-! [](../images/automation_and_for_post_exploitation_5.png)
+![](../images/automation_and_for_post_exploitation_1.png)
+![](../images/automation_and_for_post_exploitation_2.png)
+![](../images/automation_and_for_post_exploitation_3.png)
+![](../images/automation_and_for_post_exploitation_4.png)
+![](../images/automation_and_for_post_exploitation_5.png)
 
 #### 2. Private ssh-Key based Authentication**:
 **--> Using auxiliary/scanner/ssh/ssh_login_pubkey**
@@ -272,8 +272,8 @@ umount /tmp/target
 
 ```
 **Output**
-! [](../images/nfs_service_on_port_2049.png)
-! [](../images/mounting_target_file_system.png)
+![](../images/nfs_service_on_port_2049.png)
+![](../images/mounting_target_file_system.png)
 
 Now we have placed target machine's public key into its authorized keys of the target and sniffed its private key. We can simply connect to the target using ssh-client with the target private key, but here I am using ssh_login_pubkey auxiliary of the metasploit frameowork because it automate the task of authentication if we have **multiple private keys** and didn't know which key is used to authenticate with the target, or we have **multiple targets** or we have **multiple users and key pair**, In that case we use this modules to automatically trying to authenticate with username and keys-pairs instead of manually checking.
 ```
@@ -296,12 +296,12 @@ msf auxiliary(ssh_login_pubkey) > exploit
 
 ```
 **Output**
-! [](../images/changing_ownership_and_permission_of_sniffed_key_file.png)
-! [](../images/ssh_exploitation_using_target_private_key_1.png) 
-! [](../images/ssh_exploitation_using_target_private_key_2.png) 
-! [](../images/ssh_exploitation_using_target_private_key_3.png) 
-! [](../images/ssh_exploitation_using_target_private_key_4.png) 
-! [](../images/ssh_exploitation_using_target_private_key_5.png) 
+![](../images/changing_ownership_and_permission_of_sniffed_key_file.png)
+![](../images/ssh_exploitation_using_target_private_key_1.png) 
+![](../images/ssh_exploitation_using_target_private_key_2.png) 
+![](../images/ssh_exploitation_using_target_private_key_3.png) 
+![](../images/ssh_exploitation_using_target_private_key_4.png) 
+![](../images/ssh_exploitation_using_target_private_key_5.png) 
 
 ---
 
