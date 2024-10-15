@@ -308,7 +308,7 @@ msf auxiliary(ssh_login_pubkey) > exploit
 ## Exploiting Service on Port 23: telnetd service
 Since telnet(teletype network protocol) is also a remote access protocol like ssh, i.e using telnet we can access and share the server and its resources remotely. It operates on TCP/IP protocol. But telnet does not implement any encryption of data while sharing of data and resources. So it vulerable to MITM and eavesdroping attacks and nowdays it is replaced by more secure protocol like ssh.
 
-![](../images/services_on_port_23.png)
+![](../images/service_on_port_23.png)
 ### Identifying Vulnerabilites or Weakness
  1. The main vulnerability or we can say weakness in the telnet protocol was it is prone to **MITM and eavesdroping attack**(i.e if the attacker is able to interfare the communication(estabilise itself as MITM) , it can direcly sees what is being shared/exchanged because there is no encryption. But I am not going to exploit it with MITM.
  ```
