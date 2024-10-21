@@ -88,11 +88,14 @@ v  -> For verbose i.e detail about each step.
 
 ---
 # Step 2 Identifying Vulnerabilites and Exploit them
-In this phase different running services are analyzed against the common vulnerabilites scanning scripts and try to exploit them using diffent exploits and payloads available in the metasploit framework.
+In this phase different running services are analyzed against the common vulnerabilites scanning scripts and try to exploit them using diffent exploits and payloads available in the metasploit framework. Generally we start check for vulnerabilities for common port like 80, 512 etc. but as I targeted our own vulnerable machine lets start for each port one by one.
 
-## 1. Exploiting Service on port 21: Vsftpd(very secure file transfer protocol deamon) 2.3.4
-
+## 1. Exploiting Service on port 21:ftp-> Vsftpd 2.3.4
 As from the nmap scan we got that an ftp service is running on port 21 along with its version -> vsftpd 2.3.4.
+
+Vsftpd(very secure file transfer protocol deamon) is a ftp service used to share files and resources more securely with the server. 
+
+
 
 ### Identifying Vulnerabilities or Weakness:
 ```
@@ -380,10 +383,15 @@ output:
 From the output we can conclude that we have identified different user on the target that are using smtpd service.
 
 ---
-## Exploiting Service on Port 80: Apache httpd 2.2.8 service
-The Apache HTTP Server (httpd) is an open-source web server software(Web container). It is one of the most widely used web servers in the world, designed to deliver web content through the internet. 
 
-It is compatible with mostly all operating systems like Linux, Windows, and macOS, and can serve both static and dynamic web pages. It uses mostly Php as a server side language.
+## Exploiting Service on Port 53: Domain-> ISC BIND 
+ISC BIND is the most commonly used domain services in the linux based system. It mainly used to resolve the domain name into the ip address, so that we can access that website/server over the internet.
+
+
+### Identifying Vulnerabilites or Weakness
+
+## Exploiting Service on Port 80: Apache httpd 2.2.8 service
+The Apache HTTP Server (httpd) is an open-source web server software(Web container). It is one of the most widely used web servers in the world, designed to deliver the web content. It is compatible with mostly all operating systems like Linux, Windows, and macOS, and can serve both static and dynamic web pages. It uses mostly Php as a server side language.
 ![](../images/service_on_port_80.png)
 
 ### Identifying Vulnerabilites or Weakness
