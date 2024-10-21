@@ -44,6 +44,8 @@ Metasploit is an open-source penetration testing platform that allows cybersecur
  #### Metasploit helps streamline the exploitation process, making it a go-to tool for vulnerability assessments and Exploitation.
 
  ---
+ ### 3. Hydra
+ ### 4. Openvas
 # Step 1 Enummeration or Reconnasissance
 
 This is the first step in the penetration testing also known as Information Gathering step. In this step Gather as much information as you can about the target. It includes find ip addresses, public information about the target, Target OS, various services running on target, open port, its domain and subdomain etc. This phase is very crucial to further carry out in both server side and client side attack.
@@ -389,13 +391,22 @@ ISC BIND is the most commonly used domain services in the linux based system. It
 ![](../images/service_on_port_53.png)
 
 ### Identifying Vulnerabilites or Weakness
-Here we I am using vulners script to search for vulnerability in the ISC bind service. I find quiet lots of vulnerabilities correspond to this services but most of them are DOS(Denial of Service) and DNS spoofing attack. I also search on google, vulners.com and CVE details to verify these vulerabilities(always prefered). Through My reasearch of exploiting the vulnerabilites on domain service, I found the two main vulnerability that I can exploit is-
+Here we I am using vulners script to search for vulnerability in the ISC bind service. I find quiet lots of vulnerabilities correspond to this services but most of them are DOS(Denial of Service) and DNS spoofing attack. 
+![](../images/vulnerabilites_in_domain_service.png)
+I also search on google, vulners.com and CVE details to verify these vulerabilities(always prefered). Through My reasearch of exploiting the vulnerabilites on domain service, I found the two main vulnerability that I can exploit is-
+
 **1.DNS Cache Poisoning/DNS Hijacking vulnerability** **CVE-2008-4194/1447**
+
 In this vulnerability, we can send dns responses(poisoning) to the target in order to cache the false dns entry for a specific domain in the target dns server. 
 **2.Buffer-Overflow vulnerability** **CVE-2021-25216**
+**3.Dos by crashing the Named service** **CVE-2009-0696**
+
+The vulnerability allows an attacker to cause a denial of service (DoS) by sending crafted dynamic update messages to BIND’s named daemon, causing it to crash. In the isc bind service, have a vulnerability in how they process TKEY queries. The vulnerability can be triggered remotely, and sending a single malformed TKEY request can cause a denial of service (DoS) by crashing the **named** service, which handles DNS queries.
+
+The TKEY record (type="TKEY") is used for transaction key management in DNSSEC. BIND 9.4.2 has certain flaws that, incorrectly handles certain TKEY requests, allowing an attacker to craft a request that crashes the service.
 
 ### Exploitation
-#### Exploitation Using the DNS cache poisoning
+#### 1.Exploitation the DNS cache poisoning vulnerability
 For this, on a little search on google I found a metasploit exploit module which can perform the dns poisoning attack for a specific domain/host.
 **auxiliary/spoof/dns/bailiwicked_domain**
 **auxiliary/spoof/dns/bailiwicked_host**
@@ -417,6 +428,10 @@ msf auxiliary(spoof/dns/bailiwicked_domain) > set SRCADDR Real
 msf auxiliary(spoof/dns/bailiwicked_domain) > set XIDS 20000
 msf auxiliary(spoof/dns/bailiwicked_domain) > run
 ```
+**Output**
+![](../images/exploiting_dns_spoofing_vulnerability_1.png)
+![](../images/exploiting_dns_spoofing_vulnerability_2.png)
+![](../images/exploiting_dns_spoofing_vulnerability_3.png)
 As the attack is good to go, ensure that-
 1. The metasploitable machine uses the ISC BIND service to resolve the dns, as the metasploit is connected to LAN interface of opensense, there are chances that it is configure to dns forwarding to the opensense and if so the metaspoitable machine is not using its own ISC bind service and this attack doesn't work. For that you must ensure that there is **nameserver 127.0.0.1** entry in the resolv.conf file.
 2. Also check that your opensense firewall is not blocking the fluided dns responses in the network.
@@ -425,6 +440,16 @@ As the attack is good to go, ensure that-
 ![]()
 ![]()
 As of now I perform the attack multiple time, changing parameters and also analysis the traffic using wireshark but every times the attack fails to spoof the dns entry for that domain. I conclude that there is a DNSSEC is enabled on the example.com domain which takes PRG signature verification before the dns response get accepted, and so my spoofed dns responses got rejected by the target. Hence this attack not worked but I can try It using my own domain having not DNSSEC in future and hope so it works.
+
+#### Exploiting the Tkey-querry handling vulerability
+To exploit this vulnerability, we need to craft a malicious Tkey(Transition key)-querry which can cause the named services to crash and the whole goes down as Dos.
+The TKEY record (type="TKEY") is used for transaction key management in DNSSEC. BIND 9.4.2 incorrectly handles certain TKEY requests, allowing an attacker to craft a request that crashes the service.
+This exploit does not require authentication, making it a remote exploit for denial of service.
+For this I crafted a python script to send a malicious Tkey request
+[]
+```
+python script.py
+```
 --- 
 
 ## Exploiting Service on Port 80: Apache httpd 2.2.8 service
